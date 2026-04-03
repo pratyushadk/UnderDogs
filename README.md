@@ -1,12 +1,12 @@
-# GigShield — AI-Powered Parametric Income Protection for India's Gig Economy
+# WorkSafe — AI-Powered Parametric Income Protection for India's Gig Economy
 
 ## Overview
 
-GigShield is a parametric insurance platform purpose-built for India's platform-based delivery partners — the riders working for Zomato, Swiggy, Zepto and similar services. These workers form the backbone of India's digital commerce layer, yet they operate without any financial safety net when external disruptions wipe out their ability to earn.
+WorkSafe is a parametric insurance platform purpose-built for India's platform-based delivery partners — the riders working for Zomato, Swiggy, Zepto and similar services. These workers form the backbone of India's digital commerce layer, yet they operate without any financial safety net when external disruptions wipe out their ability to earn.
 
 This platform monitors environmental, infrastructural, and social disruptions in real time, automatically triggers claims when conditions breach predefined thresholds, and settles payouts instantly — all without the rider filing a single form.
 
-**Key distinction:** GigShield insures *lost income*, not health, accidents, vehicle damage, or any other traditional insurance category. The entire financial model operates on a **Rolling Weekly Subscription** aligned with how gig workers actually get paid.
+**Key distinction:** WorkSafe insures *lost income*, not health, accidents, vehicle damage, or any other traditional insurance category. The entire financial model operates on a **Rolling Weekly Subscription** aligned with how gig workers actually get paid.
 
 ---
 
@@ -213,7 +213,7 @@ $$Payout = E_{avg} \cdot H_{lost} \cdot C_{ratio}$$
 ---
 
 ## Fraud Prevention Architecture
-GigShield implements a defense-in-depth approach across four distinct layers:
+WorkSafe implements a defense-in-depth approach across four distinct layers:
 
 | Layer | Mechanism | What It Catches |
 |-------|----------|-----------------|
@@ -321,7 +321,7 @@ GigShield implements a defense-in-depth approach across four distinct layers:
 
 ## Impact
 
-GigShield transforms income protection from a reactive, paperwork-heavy process into a fully automated, trust-minimized system. By combining spatial intelligence, predictive risk modeling, and multi-layered fraud prevention, it delivers a product that:
+WorkSafe transforms income protection from a reactive, paperwork-heavy process into a fully automated, trust-minimized system. By combining spatial intelligence, predictive risk modeling, and multi-layered fraud prevention, it delivers a product that:
 
 - **Protects the most vulnerable workforce** in India's digital economy from financial shocks they cannot control.
 - **Aligns with gig worker economics** through weekly pricing, platform-native integration, and zero-friction claims.
