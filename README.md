@@ -45,8 +45,8 @@ The consequences are concrete:
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| **Backend Core** | Java / Spring Boot | Microservice architecture handling concurrent cron jobs polling APIs across hundreds of city zones |
-| **Spatial Database** | PostgreSQL + PostGIS | Stores delivery zones as strict geometric polygons (GeoJSON); enables spatial queries like `ST_Contains(zone_polygon, rider_location)` |
+| **Backend Core** | Node.js / Express.js | Lightweight, JSON-native API gateway with `node-cron` for scheduled polling and premium calculation cycles |
+| **Spatial Database** | PostgreSQL + PostGIS | Stores delivery zones as strict geometric polygons (GeoJSON); offloads all spatial math (`ST_Contains`, geofencing) from Node.js to the database layer |
 | **ML Service** | Python / FastAPI | Isolated microservice hosting CLIP-based image classification and Moiré pattern detection for fraud prevention |
 | **Frontend** | React.js + Tailwind CSS | Mobile-responsive web interface simulating a native platform tab |
 
@@ -62,7 +62,7 @@ The consequences are concrete:
 The rider accesses the delivery platform (Zomato, Swiggy, etc.) and finds a newly integrated **"Income Protection"** tab directly within their primary dashboard. No separate app, no external redirect.
 
 **1.2 — Automated Data Ingestion**
-Upon accessing the tab, the Spring Boot backend securely queries the platform's internal APIs to fetch the rider's historical operational profile:
+Upon accessing the tab, the Express.js backend securely queries the platform's internal APIs to fetch the rider's historical operational profile:
 
 - **Primary Delivery Hub** — Mapped to an existing GeoJSON polygon in the database (e.g., `Zone_Indiranagar`).
 - **Operational Rhythms** — Average hours worked per day and preferred shift timings (morning, evening, late-night).
@@ -80,7 +80,7 @@ Upon accessing the tab, the Spring Boot backend securely queries the platform's 
 **Objective:** Calculate dynamic premiums via predictive risk modeling while mathematically preventing "fair-weather" subscription fraud.
 
 **2.1 — The Weekend Calculation Cycle (Saturday 11:00 PM)**
-A scheduled Spring Boot cron job initiates the weekly pricing calculation for all active users. The backend queries external APIs (Tomorrow.io, PredictHQ) for 7-day forecasts covering extreme weather, pollution, and localized social disruptions.
+A `node-cron` scheduled job initiates the weekly pricing calculation for all active users. The backend queries external APIs (Tomorrow.io, PredictHQ) for 7-day forecasts covering extreme weather, pollution, and localized social disruptions.
 
 **2.2 — Math Model 1: Predictive Pricing & Consistency Matrix**
 
@@ -116,7 +116,7 @@ The system queries the rider's `subscription_streak` ledger:
 **Objective:** Real-time trigger monitoring and parametric automation across the entire metropolitan grid.
 
 **3.1 — The 15-Minute Polling Loop**
-A master asynchronous task iterates through all operational city zones in the database. For each independent polygon, it fetches hyper-local, real-time data from Weather and Traffic APIs.
+A `node-cron` scheduled task iterates through all operational city zones in the database every 15 minutes. For each independent polygon, it fetches hyper-local, real-time data from Weather and Traffic APIs using async/await concurrency.
 
 **3.2 — Math Model 3: Live Disruption Index ($DI$)**
 
@@ -239,8 +239,8 @@ GigShield implements a defense-in-depth approach across four distinct layers:
 ### Backend
 | Technology | Role |
 |-----------|------|
-| **Java / Spring Boot** | Microservice core handling concurrent cron jobs, API orchestration, spatial math, and business logic |
-| **Spring Scheduler** | Weekend premium calculation cycles, 15-minute polling loops |
+| **Node.js / Express.js** | Fast, JSON-native API gateway handling route logic, API orchestration, and business rules. Delegates spatial math to PostGIS rather than computing it in-process |
+| **node-cron** | Weekend premium calculation cycles, 15-minute disruption polling loops |
 | **Haversine Engine** | Server-side GPS velocity validation (primary defense against spoofing in web context) |
 
 ### Database
@@ -252,7 +252,7 @@ GigShield implements a defense-in-depth approach across four distinct layers:
 ### ML / AI Microservice
 | Technology | Role |
 |-----------|------|
-| **Python / FastAPI** | Isolated inference service called via REST from the Spring Boot backend |
+| **Python / FastAPI** | Isolated inference service called via REST from the Express.js backend |
 | **Hugging Face — CLIP** | Zero-shot image classification (flood/protest/traffic/normal) without custom model training |
 | **OpenCV** | Moiré pattern and screen-glare detection for photo authenticity validation |
 
@@ -306,7 +306,7 @@ GigShield implements a defense-in-depth approach across four distinct layers:
 
 ```
 1. PostgreSQL + PostGIS initialized with city zone polygons (GeoJSON)
-2. Spring Boot backend starts — cron jobs register, polling loops activate
+2. Node.js/Express backend starts — node-cron jobs register, polling loops activate
 3. FastAPI ML service starts — CLIP model loaded, OpenCV pipeline ready
 4. React frontend served — connects to backend APIs
 5. Rider onboards via platform tab → data fetched, consent captured
