@@ -7,7 +7,7 @@
 | Field | Detail |
 |-------|--------|
 | **Document Title** | Software Requirements Specification — WorkSafe Platform |
-| **Version** | 2.0.0 |
+| **Version** | 1.0.0 |
 | **Status** | Final — Hackathon Submission |
 | **Date** | April 4, 2026 |
 | **Prepared by** | Pratyush Adhikari, Team UnderDogs |
