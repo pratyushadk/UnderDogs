@@ -4,7 +4,8 @@
  */
 import axios from 'axios';
 
-const BASE_URL = '/api';
+const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || '';
+const BASE_URL = `${BACKEND_URL}/api`;
 
 const api = axios.create({ baseURL: BASE_URL, timeout: 15000 });
 
@@ -33,6 +34,6 @@ export const fetchEvent        = (id)  => api.get(`/claims/event/${id}`);
 export const submitReport    = (data)  => api.post('/reports/submit', data);
 
 // ── Health ────────────────────────────────────────────────────
-export const fetchHealth     = ()      => axios.get('/health');
+export const fetchHealth     = ()      => axios.get(`${BACKEND_URL || ''}/health`);
 
 export default api;
