@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchDashboard, fetchClaims, fetchPolicyStatus, fetchZones } from '../services/api.js';
 import ZoneMap from '../components/ZoneMap.jsx';
+import { LayoutDashboard, Map as MapIcon, CreditCard, ChevronRight, Activity, Zap, TrendingUp, ShieldCheck, Download, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const DI_CLASS = di => di > 75 ? 'di-disrupted' : di > 50 ? 'di-high' : di > 25 ? 'di-moderate' : 'di-safe';
 const DI_LABEL = di => di > 75 ? 'Disrupted' : di > 50 ? 'High' : di > 25 ? 'Moderate' : 'Safe';
@@ -38,7 +39,6 @@ export default function Dashboard({ jwt }) {
         if (dash.status === 'fulfilled')  setStats(dash.value.data);
         if (cl.status  === 'fulfilled') {
           const raw = cl.value.data;
-          // backend returns { claims: [...], total: n }
           setClaims(Array.isArray(raw) ? raw : (raw?.claims ?? []));
         }
         if (z.status === 'fulfilled') {
@@ -53,15 +53,14 @@ export default function Dashboard({ jwt }) {
   const totalPaid = settled.reduce((s, c) => s + Number(c.payout_amount || 0), 0);
   const streak = policy?.subscription_streak ?? 0;
 
-  // Disruption events (triggered zones from stats)
   const disrupted = zones.filter(z => (z.current_di ?? 0) > 75);
 
   if (loading) {
     return (
-      <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
-          <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3, margin: '0 auto 12px' }} />
-          <p className="text-sm">Loading your dashboard…</p>
+      <div className="page-container flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="text-center text-slate-500">
+          <div className="spinner mb-4 w-10 h-10 border-4" />
+          <p className="text-sm font-semibold">Loading your dashboard…</p>
         </div>
       </div>
     );
@@ -70,7 +69,7 @@ export default function Dashboard({ jwt }) {
   return (
     <div className="page-container-wide">
       {/* ── Header ── */}
-      <div className="page-header">
+      <div className="page-header text-center sm:text-left">
         <div className="page-header-eyebrow">Dashboard</div>
         <h1 className="page-header-title">
           {policy?.zone_id
@@ -78,142 +77,167 @@ export default function Dashboard({ jwt }) {
             : 'Income Protection'}
         </h1>
         <p className="page-header-subtitle">
-          Your real-time parametric insurance overview · Auto-settlement enabled
+          Real-time parametric insurance overview. Relax, we've got you covered.
         </p>
       </div>
 
-      {/* ── Disruption Banner (if any zone is triggered) ── */}
+      {/* ── Disruption Banner ── */}
       {disrupted.map(z => (
-        <div key={z.zone_id} className="disruption-banner mb-4">
-          <div>
-            <div className="disruption-banner-text" style={{ color: 'var(--red-400)', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
-              🚨 Active Disruption · {z.zone_id.replace('Zone_', '').replace(/_/g, ' ')}
+        <div key={z.zone_id} className="disruption-banner mb-8 animate-slide-up shadow-lg">
+          <div className="flex items-start gap-4">
+            <div className="bg-red-100 p-2 rounded-full mt-1">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
             </div>
-            <p className="text-sm text-muted">
-              DI = {Math.round(z.current_di)} — auto-settlement pipeline triggered for this zone.
-            </p>
+            <div>
+              <div className="disruption-banner-text">
+                <h4>Active Disruption · {z.zone_id.replace('Zone_', '').replace(/_/g, ' ')}</h4>
+              </div>
+              <p className="text-red-500 font-medium">
+                Auto-settlement pipeline triggered for this zone due to extreme conditions.
+              </p>
+            </div>
           </div>
-          <span className={`di-badge di-disrupted`} style={{ fontSize: 16, padding: '6px 14px' }}>
-            {Math.round(z.current_di)}
-          </span>
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-xs font-bold text-red-400 uppercase tracking-widest">DI Score</span>
+            <span className={`di-badge di-disrupted text-lg px-4 py-1.5 shadow-sm`}>
+              {Math.round(z.current_di)}
+            </span>
+          </div>
         </div>
       ))}
 
       {/* ── Tab Group ── */}
-      <div className="tab-group">
-        {[['overview', '📊 Overview'], ['map', '🗺️ Zone Map'], ['claims', '💳 Claims']].map(([id, label]) => (
-          <button key={id} className={`tab-item ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>
-            {label}
+      <div className="tab-group flex w-full sm:w-auto overflow-x-auto custom-scrollbar shadow-sm">
+        {[
+          { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
+          { id: 'map', icon: MapIcon, label: 'Zone Map' },
+          { id: 'claims', icon: CreditCard, label: 'Claims' },
+        ].map((t) => (
+          <button key={t.id} className={`tab-item shrink-0 ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
+            <t.icon className="w-4 h-4 mr-2 hidden sm:inline" />
+            {t.label}
           </button>
         ))}
       </div>
 
       {/* ════════ OVERVIEW ════════ */}
       {tab === 'overview' && (
-        <>
+        <div className="animate-fade-in">
           {/* KPI cards */}
-          <div className="dashboard-grid mb-4">
-            <div className="kpi-card green">
-              <span className="kpi-icon">💰</span>
+          <div className="dashboard-grid">
+            <div className="kpi-card green hover:shadow-xl">
+              <div className="kpi-icon"><Zap className="w-6 h-6" /></div>
               <div className="kpi-value">{fmt(totalPaid)}</div>
-              <div className="kpi-label">Total Paid Out</div>
-              <div className="kpi-trend up">↑ {settled.length} settled claim{settled.length !== 1 ? 's' : ''}</div>
+              <div className="kpi-label">Total Claims Paid</div>
+              <div className="kpi-trend up"><TrendingUp className="w-4 h-4" /> {settled.length} settled payout{settled.length !== 1 ? 's' : ''}</div>
             </div>
-            <div className="kpi-card">
-              <span className="kpi-icon">🔥</span>
+            <div className="kpi-card brand hover:shadow-xl">
+              <div className="kpi-icon"><Activity className="w-6 h-6" /></div>
               <div className="kpi-value">{streak}</div>
-              <div className="kpi-label">Week Streak</div>
-              <div className={`kpi-trend ${streak >= 4 ? 'up' : 'flat'}`}>
-                {streak >= 12 ? '🏆 Legend' : streak >= 4 ? '⚡ On a roll' : '🌱 Building'}
+              <div className="kpi-label">Active Week Streak</div>
+              <div className={`kpi-trend ${streak >= 4 ? 'up' : 'text-slate-500'}`}>
+                {streak >= 12 ? 'Legend Status' : streak >= 4 ? 'Excellent Coverage' : 'Building History'}
               </div>
             </div>
-            <div className="kpi-card">
-              <span className="kpi-icon">🛡️</span>
+            <div className="kpi-card hover:shadow-xl">
+              <div className="kpi-icon"><ShieldCheck className="w-6 h-6" /></div>
               <div className="kpi-value">{policy?.status === 'ACTIVE' ? 'Active' : 'Inactive'}</div>
-              <div className="kpi-label">Policy Status</div>
-              <div className="kpi-trend flat">
-                C_ratio: {policy?.c_factor ?? '—'}
+              <div className="kpi-label">Coverage Status</div>
+              <div className="kpi-trend text-slate-500">
+                Risk multiplier: {policy?.c_factor ?? '—'}
               </div>
             </div>
           </div>
 
-          {/* Policy detail */}
-          <div className="card mb-4">
-            <div className="section-label">Policy Details</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 16 }}>
-              {[
-                ['Zone', (policy?.zone_id ?? '—').replace('Zone_', '').replace(/_/g, ' ')],
-                ['Weekly Premium', fmt(policy?.last_premium_amount)],
-                ['C_factor', policy?.c_factor ?? '—'],
-                ['Streak', `${streak} week${streak !== 1 ? 's' : ''}`],
-                ['Coverage Trigger', 'DI > 75'],
-                ['Opt-out Deadline', 'Sunday 23:59'],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <div className="card-label">{label}</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginTop: 2 }}>
-                    {value}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            {/* Policy detail */}
+            <div className="card lg:col-span-2 shadow-md border-t-4 border-t-brand-500 bg-gradient-to-br from-white to-slate-50/50">
+              <div className="section-label flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-brand-500" /> Policy Configuration
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-4 mt-6">
+                {[
+                  ['Registered Zone', (policy?.zone_id ?? '—').replace('Zone_', '').replace(/_/g, ' ')],
+                  ['Base Premium', fmt(policy?.last_premium_amount)],
+                  ['Risk Rating', policy?.c_factor ?? '—'],
+                  ['Current Streak', `${streak} consecutive week${streak !== 1 ? 's' : ''}`],
+                  ['Payout Trigger', 'DI Score > 75'],
+                  ['Next Review', 'Sunday 23:59'],
+                ].map(([label, value]) => (
+                  <div key={label} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                    <div className="card-label">{label}</div>
+                    <div className="text-base font-bold text-slate-900 mt-1">{value}</div>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent claims sidebar */}
+            <div className="card shadow-md bg-white">
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                <div className="section-label mb-0">Recent Payouts</div>
+                {settled.length > 0 && (
+                  <button className="text-xs font-bold text-brand-600 flex items-center hover:text-brand-800 transition" onClick={() => setTab('claims')}>
+                    View all <ChevronRight className="w-3 h-3 ml-1" />
+                  </button>
+                )}
+              </div>
+              
+              {settled.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                   <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                   <p className="text-sm font-medium">No payouts yet.</p>
                 </div>
-              ))}
+              ) : (
+                <div className="space-y-4">
+                  {settled.slice(0, 4).map(cl => (
+                    <div key={cl.claim_id || cl.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+                      <div>
+                        <div className="text-sm font-bold text-slate-900 leading-tight">
+                          {(cl.zone_id ?? '').replace('Zone_', '').replace(/_/g, ' ')}
+                        </div>
+                        <div className="text-xs text-slate-500 font-medium mt-1">{fmtDt(cl.settled_at)}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono font-bold text-emerald-600 text-base">
+                          {fmt(cl.payout_amount)}
+                        </div>
+                        <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mt-1">{cl.h_lost}h covered</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Recent claims (last 3) */}
-          {settled.length > 0 && (
-            <div className="card">
-              <div className="flex items-center justify-between mb-3">
-                <div className="section-label">Recent Payouts</div>
-                <button className="btn btn-ghost btn-sm" onClick={() => setTab('claims')}>
-                  View all →
-                </button>
-              </div>
-              {settled.slice(0, 3).map(cl => (
-                <div key={cl.claim_id || cl.id} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '12px 0', borderBottom: '1px solid var(--border-subtle)',
-                }}>
-                  <div>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {(cl.zone_id ?? '').replace('Zone_', '').replace(/_/g, ' ')}
-                    </div>
-                    <div className="text-xs text-muted mt-2">{fmtDt(cl.settled_at)}</div>
-                  </div>
-                  <div className="text-right">
-                    <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 700, color: 'var(--green-400)', fontSize: 15 }}>
-                      {fmt(cl.payout_amount)}
-                    </div>
-                    <div className="text-xs text-muted mt-2">{cl.h_lost}h lost</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
+        </div>
       )}
 
       {/* ════════ ZONE MAP ════════ */}
       {tab === 'map' && (
-        <div>
-          <div className="zone-map-card" style={{ height: 480 }}>
-            <ZoneMap zones={zones} height={480} />
+        <div className="animate-fade-in space-y-6">
+          <div className="zone-map-card shadow-lg ring-1 ring-slate-200" style={{ height: 500 }}>
+            <ZoneMap zones={zones} height={500} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12, marginTop: 16 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {zones.map(z => {
               const di = z.current_di ?? 0;
               return (
-                <div key={z.zone_id} className="card card-sm">
-                  <div className="flex items-center justify-between">
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                <div key={z.zone_id} className="card card-sm bg-white hover:border-brand-300 transition">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm font-bold text-slate-900 truncate pr-2">
                       {z.zone_id.replace('Zone_', '').replace(/_/g, ' ')}
                     </span>
-                    <span className={`di-badge ${DI_CLASS(di)}`}>{Math.round(di)}</span>
+                    <span className={`di-badge shrink-0 ${DI_CLASS(di)}`}>{Math.round(di)}</span>
                   </div>
                   <div className="di-progress">
                     <div className={`di-progress-fill ${DI_CLASS(di)}`} style={{ width: `${Math.min(di, 100)}%` }} />
                   </div>
-                  <div className="text-xs text-muted mt-2">{DI_LABEL(di)} · Risk ×{z.risk_multiplier ?? '1.00'}</div>
+                  <div className="flex justify-between items-center mt-3 text-xs">
+                    <span className="font-semibold text-slate-600">{DI_LABEL(di)}</span>
+                    <span className="text-slate-400">Risk ×{z.risk_multiplier ?? '1.00'}</span>
+                  </div>
                 </div>
               );
             })}
@@ -223,75 +247,78 @@ export default function Dashboard({ jwt }) {
 
       {/* ════════ CLAIMS ════════ */}
       {tab === 'claims' && (
-        <div>
-          {/* Summary banner for triggered events */}
+        <div className="animate-fade-in">
+          {/* Summary banner */}
           {settled.length > 0 && (
-            <div className="card mb-4" style={{
-              background: 'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, transparent 100%)',
-              border: '1px solid rgba(52,211,153,0.15)',
-            }}>
-              <div className="flex items-center gap-3">
-                <span style={{ fontSize: 28 }}>🎉</span>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--green-400)' }}>
-                    {fmt(totalPaid)} paid out automatically
-                  </div>
-                  <div className="text-sm text-muted">
-                    {settled.length} claim{settled.length !== 1 ? 's' : ''} settled via Razorpay — no action needed
-                  </div>
+            <div className="card mb-6 bg-emerald-50 border-emerald-100 shadow-sm flex items-center gap-6">
+              <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <div className="font-bold text-lg text-emerald-800">
+                  {fmt(totalPaid)} deposited automatically
+                </div>
+                <div className="text-sm text-emerald-600 font-medium mt-1">
+                  {settled.length} claim{settled.length !== 1 ? 's' : ''} settled to your verified account — zero paperwork.
                 </div>
               </div>
             </div>
           )}
 
           {claims.length === 0 ? (
-            <div className="card" style={{ textAlign: 'center', padding: 48 }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>💤</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>No disruptions yet</div>
-              <p className="text-sm text-muted mt-2">
-                When your zone's DI exceeds 75, claims settle automatically here.
+            <div className="card text-center py-20 px-4">
+              <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <CheckCircle className="w-8 h-8 text-slate-300" />
+              </div>
+              <div className="text-xl font-bold text-slate-900 mb-2">Clear Skies</div>
+              <p className="text-slate-500 max-w-sm mx-auto">
+                No disruptions recorded in your history. When severe events occur, automatic claim settlements will appear here.
               </p>
             </div>
           ) : (
-            <div className="table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Zone</th>
-                    <th>DI Score</th>
-                    <th>Hours Lost</th>
-                    <th>Payout</th>
-                    <th>Razorpay ID</th>
-                    <th>Status</th>
-                    <th>Settled</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {claims.map(cl => (
-                    <tr key={cl.claim_id || cl.id}>
-                      <td className="td-primary">
-                        {(cl.zone_id ?? '').replace('Zone_', '').replace(/_/g, ' ')}
-                      </td>
-                      <td>
-                        <span className={`di-badge ${DI_CLASS(cl.di_score ?? 0)}`}>
-                          {cl.di_score ?? '—'}
-                        </span>
-                      </td>
-                      <td className="td-mono">{cl.h_lost}h</td>
-                      <td className="td-amount">{fmt(cl.payout_amount)}</td>
-                      <td className="td-mono" style={{ fontSize: 11.5, color: 'var(--text-tertiary)' }}>
-                        {cl.razorpay_txn_id ? cl.razorpay_txn_id.slice(0, 22) + '…' : '—'}
-                      </td>
-                      <td>
-                        <span className={`badge ${cl.status === 'SETTLED' ? 'badge-green' : cl.status === 'PENDING' ? 'badge-amber' : 'badge-red'}`}>
-                          {cl.status}
-                        </span>
-                      </td>
-                      <td className="text-xs text-muted">{fmtDt(cl.settled_at)}</td>
+            <div className="table-wrap shadow-md">
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Zone</th>
+                      <th>DI Score</th>
+                      <th>Impact</th>
+                      <th>Settlement</th>
+                      <th>Transaction ID</th>
+                      <th>Status</th>
+                      <th>Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {claims.map(cl => (
+                      <tr key={cl.claim_id || cl.id}>
+                        <td className="font-semibold text-slate-900">
+                          {String(cl.zone_id || '').replace('Zone_', '').replace(/_/g, ' ')}
+                        </td>
+                        <td>
+                          <span className={`di-badge ${DI_CLASS(cl.di_score ?? 0)}`}>
+                            {cl.di_score ?? '—'}
+                          </span>
+                        </td>
+                        <td className="text-slate-600 font-medium">{cl.h_lost}h missed</td>
+                        <td className="td-amount tracking-tight">{fmt(cl.payout_amount)}</td>
+                        <td className="td-mono text-xs text-slate-400">
+                          <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded inline-flex border border-slate-100">
+                            {cl.razorpay_txn_id ? String(cl.razorpay_txn_id).slice(0, 18) + '…' : '—'}
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`badge ${cl.status === 'SETTLED' ? 'badge-green' : cl.status === 'PENDING' ? 'badge-amber' : 'badge-red'}`}>
+                            {cl.status}
+                          </span>
+                        </td>
+                        <td className="text-sm text-slate-500">{fmtDt(cl.settled_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

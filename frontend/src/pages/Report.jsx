@@ -1,26 +1,27 @@
 import { useState, useRef, useEffect } from 'react';
 import { submitReport, fetchPolicyStatus } from '../services/api.js';
+import { Fingerprint, Activity, Cpu, Users, MapPin, Camera, RefreshCw, Send, AlertTriangle, CheckCircle, ChevronLeft, ShieldAlert } from 'lucide-react';
 
 const GATES = [
   {
-    id: 'duplicate', icon: '🔁',
-    name: 'Gate 1 — Duplicate Check',
-    desc: 'Blocks repeated reports within 5 minutes from the same rider.',
+    id: 'duplicate', icon: Fingerprint,
+    name: 'Integrity Check',
+    desc: 'Validating unique session signature to prevent duplicate claims.',
   },
   {
-    id: 'velocity', icon: '🛰️',
-    name: 'Gate 2 — GPS Velocity Check',
-    desc: 'Haversine model rejects if GPS speed > 80 km/h (physically impossible on foot).',
+    id: 'velocity', icon: Activity,
+    name: 'Velocity Audit',
+    desc: 'Verifying GPS movement is within physical bounds.',
   },
   {
-    id: 'ai', icon: '🤖',
-    name: 'Gate 3 — AI Vision Analysis',
-    desc: 'CLIP zero-shot verifies disruption scene + FFT Moiré scan rejects screenshots.',
+    id: 'ai', icon: Cpu,
+    name: 'Neural Scene Vision',
+    desc: 'Visual scan for disruption presence and spoofing detection.',
   },
   {
-    id: 'threshold', icon: '📊',
-    name: 'Gate 4 — Crowdsource Threshold',
-    desc: 'Logarithmic model U_min = max(3, ⌈2.5·ln(N+1)⌉) prevents single-rider manipulation.',
+    id: 'threshold', icon: Users,
+    name: 'Consensus Threshold',
+    desc: 'Aggregating regional node clusters for event verification.',
   },
 ];
 
@@ -46,7 +47,7 @@ export default function Report({ jwt, onBack }) {
     setGeoErr('');
     navigator.geolocation.getCurrentPosition(
       pos => setGeoData({ lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: Math.round(pos.coords.accuracy) }),
-      err => { setGeoErr(`GPS error: ${err.message}`); setStep('idle'); },
+      err => { setGeoErr(`Location required: ${err.message}`); setStep('idle'); },
       { enableHighAccuracy: true, timeout: 10000 },
     );
   };
@@ -62,7 +63,7 @@ export default function Report({ jwt, onBack }) {
       setStream(s);
       if (videoRef.current) { videoRef.current.srcObject = s; videoRef.current.play(); }
     } catch (e) {
-      setGeoErr('Camera access denied. Please allow camera in browser settings.');
+      setGeoErr('Camera access is required to securely capture the disruption scene.');
       setStep('idle');
     }
   };
@@ -108,14 +109,13 @@ export default function Report({ jwt, onBack }) {
       setStep('done');
     } catch (e) {
       const err = e.response?.data;
-      // Determine which gate failed
       const failGate = err?.gate_failed === 'DUPLICATE'  ? 'duplicate'
                      : err?.gate_failed === 'VELOCITY'   ? 'velocity'
                      : err?.gate_failed === 'AI_VISION'  ? 'ai'
                      : err?.gate_failed === 'THRESHOLD'  ? 'threshold'
                      : 'ai';
       setGateStatus(g => ({ ...g, [failGate]: 'failed' }));
-      setResult({ success: false, error: err?.error || 'Submission failed.' });
+      setResult({ success: false, error: err?.error || 'Submission failed during verification.' });
       setStep('error');
     }
   };
@@ -123,62 +123,84 @@ export default function Report({ jwt, onBack }) {
   function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   const gateSt = id => gateStatus[id] ?? 'pending';
-  const gateClass = st => ({ passed: 'passed', failed: 'failed', checking: 'checking', pending: 'pending' }[st]);
-  const gateIcon  = st => st === 'passed'   ? '✅'
-                         : st === 'failed'   ? '❌'
-                         : st === 'checking' ? '⏳'
-                         : '○';
 
   return (
-    <div className="page-container" style={{ maxWidth: 640 }}>
+    <div className="page-container-wide animate-fade-in">
       {/* ── Header ── */}
       <div className="page-header">
-        <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>← Back to Dashboard</button>
-        <div className="page-header-eyebrow">Disruption Report</div>
-        <h1 className="page-header-title">Report a Disruption</h1>
+        <button className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-600 transition mb-6" onClick={onBack}>
+          <ChevronLeft className="w-4 h-4" /> Back to Dashboard
+        </button>
+        <div className="page-header-eyebrow flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4" /> Incident Reporting
+        </div>
+        <h1 className="page-header-title">Log a Disruption</h1>
         <p className="page-header-subtitle">
-          All reports pass 4 automated gates before contributing to your zone's DI score.
+          Secure, automated verification. All submissions run through our 4-point fraud prevention array.
         </p>
       </div>
 
       {/* ── GPS + Zone Info ── */}
       {policy && (
-        <div className="card card-sm mb-4 flex items-center justify-between">
+        <div className="card card-sm mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-brand-400 bg-white shadow-sm">
           <div>
-            <div className="text-xs text-muted">Registered Zone</div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginTop: 2 }}>
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Registered Sector</div>
+            <div className="text-base font-bold text-slate-900">
               {(policy.zone_id ?? '').replace('Zone_', '').replace(/_/g, ' ')}
             </div>
           </div>
           {geoData ? (
-            <span className="badge badge-green">📍 {geoData.lat.toFixed(4)}, {geoData.lon.toFixed(4)}</span>
+            <div className="bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg px-4 py-2 flex items-center gap-2 text-sm font-semibold shadow-sm">
+              <MapPin className="w-4 h-4 text-emerald-500" />
+              <span>{geoData.lat.toFixed(4)}, {geoData.lon.toFixed(4)}</span>
+            </div>
           ) : (
-            <span className="badge badge-amber">📍 GPS not locked</span>
+            <div className="bg-amber-50 text-amber-700 border border-amber-100 rounded-lg px-4 py-2 flex items-center gap-2 text-sm font-semibold shadow-sm">
+              <MapPin className="w-4 h-4 text-amber-500" />
+              <span>Awaiting GPS Lock</span>
+            </div>
           )}
         </div>
       )}
 
       {/* ── 4 Gates Panel ── */}
-      <div className="card mb-4" style={{ padding: 16 }}>
-        <div className="section-label mb-3">4-Gate Fraud Prevention</div>
-        <div className="gate-list">
+      <div className="card mb-8 shadow-sm">
+        <div className="flex items-center gap-2 mb-6">
+          <Activity className="w-5 h-5 text-brand-500" />
+          <h2 className="text-base font-bold text-slate-900">Verification Protocol</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {GATES.map(g => {
             const st = gateSt(g.id);
             return (
-              <div key={g.id} className={`gate-item ${gateClass(st)}`}>
-                <span className="gate-icon">{st === 'pending' ? g.icon : gateIcon(st)}</span>
-                <div className="gate-info">
-                  <div className="gate-name">{g.name}</div>
-                  <div className="gate-desc">{g.desc}</div>
+              <div key={g.id} className={`p-4 rounded-xl border flex flex-col gap-3 transition-colors duration-300 ${
+                st === 'passed' ? 'bg-emerald-50 border-emerald-200' :
+                st === 'failed' ? 'bg-rose-50 border-rose-200' :
+                st === 'checking' ? 'bg-brand-50 border-brand-200 shadow-sm' :
+                'bg-slate-50 border-slate-200 opacity-60'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div className={`p-2 rounded-lg ${
+                    st === 'passed' ? 'bg-emerald-100 text-emerald-600' :
+                    st === 'failed' ? 'bg-rose-100 text-rose-600' :
+                    st === 'checking' ? 'bg-brand-100 text-brand-600 animate-pulse' :
+                    'bg-slate-200 text-slate-500'
+                  }`}>
+                    <g.icon className="w-4 h-4" />
+                  </div>
+                  <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${
+                    st === 'passed' ? 'text-emerald-700 bg-emerald-100' :
+                    st === 'failed' ? 'text-rose-700 bg-rose-100' :
+                    st === 'checking' ? 'text-brand-700 bg-brand-100' :
+                    'text-slate-500 bg-slate-200'
+                  }`}>
+                    {st}
+                  </span>
                 </div>
-                <span className={`gate-status badge ${
-                  st === 'passed'   ? 'badge-green' :
-                  st === 'failed'   ? 'badge-red' :
-                  st === 'checking' ? 'badge-blue' :
-                  'badge-subtle'
-                }`}>
-                  {st === 'pending' ? 'Waiting' : st.charAt(0).toUpperCase() + st.slice(1)}
-                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 leading-tight">{g.name}</h3>
+                  <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">{g.desc}</p>
+                </div>
               </div>
             );
           })}
@@ -187,81 +209,130 @@ export default function Report({ jwt, onBack }) {
 
       {/* ── Success Result ── */}
       {step === 'done' && result?.success && (
-        <div className="alert alert-success mb-4">
-          ✅ <strong>Report accepted.</strong> Your submission is contributing to the zone DI score.
-          When the threshold is reached, auto-settlement triggers automatically.
+        <div className="bg-emerald-50 border-l-4 border-emerald-500 p-6 rounded-r-xl shadow-md mb-8">
+          <div className="flex gap-4">
+            <CheckCircle className="text-emerald-600 w-6 h-6 shrink-0" />
+            <div>
+              <h3 className="text-lg font-bold text-emerald-900 mb-1">Event Logged Successfully</h3>
+              <p className="text-emerald-700 text-sm font-medium leading-relaxed">
+                Your report has passed all checks and is contributing to the regional Disruption Index. 
+                If the severity threshold is reached, settlements will trigger automatically.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
       {/* ── Error Result ── */}
       {step === 'error' && result && (
-        <div className="alert alert-error mb-4">
-          ❌ <strong>Report rejected:</strong> {result.error}
+        <div className="bg-rose-50 border-l-4 border-rose-500 p-6 rounded-r-xl shadow-md mb-8">
+          <div className="flex gap-4">
+            <AlertTriangle className="text-rose-600 w-6 h-6 shrink-0" />
+            <div>
+              <h3 className="text-lg font-bold text-rose-900 mb-1">Verification Failed</h3>
+              <p className="text-rose-700 text-sm font-medium leading-relaxed">
+                {result.error}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
       {/* ── Camera Area ── */}
       {(step === 'camera' || step === 'reviewing') && (
-        <div className="card mb-4" style={{ padding: 0, overflow: 'hidden' }}>
-          <div className={`camera-container${step === 'camera' ? ' active' : ''}`} style={{ borderRadius: 0, border: 'none', aspectRatio: '4/3' }}>
+        <div className="card p-0 overflow-hidden shadow-lg border-brand-200 mb-6">
+          <div className="bg-slate-900 relative aspect-[4/3] flex items-center justify-center overflow-hidden">
             {step === 'camera' && (
               <>
-                <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div className="camera-overlay">LIVE</div>
+                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg flex items-center gap-2 border border-white/10 text-white font-semibold text-xs tracking-wide">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                  LIVE RECORDING
+                </div>
               </>
             )}
             {step === 'reviewing' && imgB64 && (
-              <img src={imgB64} alt="Captured" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={imgB64} alt="Captured preview" className="w-full h-full object-cover" />
             )}
           </div>
-          <div style={{ padding: '12px 16px', display: 'flex', gap: 8 }}>
+          
+          <div className="bg-white p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {step === 'camera' && (
-              <button className="btn btn-primary btn-full" onClick={capture}>📸 Capture Photo</button>
+              <button className="btn-premium-primary sm:col-span-2 py-4" onClick={capture}>
+                <Camera className="w-5 h-5" /> CAPTURE EVIDENCE
+              </button>
             )}
             {step === 'reviewing' && (
               <>
-                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={retake}>🔄 Retake</button>
-                <button className="btn btn-primary" style={{ flex: 2 }} onClick={submit}>🚀 Submit Report</button>
+                <button className="btn-premium-secondary py-3.5" onClick={retake}>
+                  <RefreshCw className="w-4 h-4" /> Retake Photo
+                </button>
+                <button className="btn-premium-primary py-3.5" onClick={submit}>
+                  <Send className="w-4 h-4" /> Secure Transmission
+                </button>
               </>
             )}
           </div>
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
-          <div style={{ padding: '8px 16px 12px', fontSize: 11.5, color: 'var(--text-tertiary)', textAlign: 'center' }}>
-            🔒 Live camera only · No gallery access · Anti-fraud enforced
+          <canvas ref={canvasRef} className="hidden" />
+          <div className="bg-slate-50 border-t border-slate-100 p-3 text-center text-xs font-semibold text-slate-500 flex items-center justify-center gap-2">
+             <ShieldAlert className="w-4 h-4 text-slate-400" /> Uploads from device gallery are strictly disabled.
           </div>
         </div>
       )}
 
       {/* ── Main CTA ── */}
       {step === 'idle' && (
-        <div className="card">
-          <div className="section-label mb-3">How to Report</div>
-          <ol style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10, color: 'var(--text-secondary)', fontSize: 14 }}>
-            <li><strong style={{ color: 'var(--text-primary)' }}>Lock your GPS</strong> — confirms you're in the disrupted zone</li>
-            <li><strong style={{ color: 'var(--text-primary)' }}>Capture a live photo</strong> — gallery blocked, camera only</li>
-            <li><strong style={{ color: 'var(--text-primary)' }}>Submit</strong> — AI verifies the scene in seconds</li>
-            <li><strong style={{ color: 'var(--text-primary)' }}>Payment triggers</strong> — when enough riders confirm</li>
-          </ol>
-          {geoErr && <div className="alert alert-error mt-4">{geoErr}</div>}
-          <button className="btn btn-primary btn-full btn-lg mt-4" onClick={getLocation}>
-            {step === 'locating' ? <><span className="spinner" /> Getting Location…</> : '📍 Get Location & Start Camera'}
-          </button>
+        <div className="card shadow-md border border-slate-200 bg-gradient-to-b from-white to-slate-50">
+          <div className="flex flex-col items-center text-center space-y-6 py-4">
+            <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center">
+              <Camera className="w-8 h-8 text-brand-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Capture the Disruption</h2>
+              <p className="text-sm text-slate-500 font-medium max-w-sm mx-auto">
+                Securely log your current location and take a live photo of the incident to verify your environment.
+              </p>
+            </div>
+            
+            {geoErr && (
+              <div className="flex items-center gap-2 text-sm text-rose-600 bg-rose-50 px-4 py-2 rounded-lg font-medium border border-rose-100">
+                <AlertTriangle className="w-4 h-4" /> {geoErr}
+              </div>
+            )}
+            
+            <button className="btn-premium-primary w-full max-w-sm py-4 text-lg shadow-lg hover:shadow-xl mt-4" onClick={getLocation}>
+              {step === 'locating' ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  Acquiring Satellites...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5" /> Initialize Camera Scanner
+                </div>
+              )}
+            </button>
+          </div>
         </div>
       )}
 
       {step === 'submitting' && (
-        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-          <div className="spinner" style={{ width: 36, height: 36, borderWidth: 3, margin: '0 auto 16px' }} />
-          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Running 4-Gate Verification…</div>
-          <p className="text-sm text-muted mt-2">This takes about 3 seconds</p>
+        <div className="card shadow-xl border-brand-200 text-center py-16">
+          <div className="relative w-20 h-20 mx-auto mb-6">
+            <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-brand-500 rounded-full border-t-transparent animate-spin"></div>
+            <ShieldAlert className="absolute inset-0 m-auto w-8 h-8 text-brand-500" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Executing Audit Protocol</h2>
+          <p className="text-sm text-slate-500 font-medium">Validating evidence matrix. This process requires 3-5 seconds.</p>
         </div>
       )}
 
       {(step === 'done' || step === 'error') && (
-        <button className="btn btn-secondary btn-full mt-4" onClick={() => {
+        <button className="btn-premium-secondary w-full py-4 text-base font-bold shadow-sm" onClick={() => {
           setStep('idle'); setGateStatus({}); setImgB64(''); setResult(null); setGeoData(null);
         }}>
-          Submit Another Report
+          Initiate New Report
         </button>
       )}
     </div>

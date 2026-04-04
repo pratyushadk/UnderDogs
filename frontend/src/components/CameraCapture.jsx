@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
+import { Camera, ShieldCheck, RefreshCw, CheckCircle, Lock } from 'lucide-react';
 
 /**
  * CameraCapture — Live camera enforced capture (SRS FR-4B.2)
@@ -38,7 +39,6 @@ export default function CameraCapture({ onCapture, onCancel }) {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
     setPreview(dataUrl);
     setPhase('preview');
-    // Stop stream preview (keep for re-capture)
   }, []);
 
   const retake = () => {
@@ -48,9 +48,8 @@ export default function CameraCapture({ onCapture, onCancel }) {
   };
 
   const confirm = () => {
-    // Stop camera stream
     streamRef.current?.getTracks().forEach((t) => t.stop());
-    onCapture(preview); // pass base64 up
+    onCapture(preview);
   };
 
   const cancel = () => {
@@ -64,13 +63,13 @@ export default function CameraCapture({ onCapture, onCancel }) {
       {error && <div className="alert alert-error">{error}</div>}
 
       {/* Anti-fraud notice */}
-      <div className="alert alert-info" style={{ fontSize: 12 }}>
-        <span>🔒</span>
+      <div className="alert alert-info" style={{ fontSize: 13 }}>
+        <Lock className="w-4 h-4 flex-shrink-0 mt-0.5" />
         <span>Live camera capture required. Screenshots or gallery photos are not accepted and will be rejected by our AI verification system.</span>
       </div>
 
       {/* Video feed */}
-      <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', background: '#111', aspectRatio: '16/9' }}>
+      <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#0F172A', aspectRatio: '16/9' }}>
         <video
           ref={videoRef}
           autoPlay
@@ -87,10 +86,10 @@ export default function CameraCapture({ onCapture, onCancel }) {
         {phase === 'idle' && (
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
-            justifyContent: 'center', flexDirection: 'column', gap: 12, color: '#94a3b8',
+            justifyContent: 'center', flexDirection: 'column', gap: 12, color: '#94A3B8',
           }}>
-            <div style={{ fontSize: 48 }}>📷</div>
-            <div style={{ fontSize: 14 }}>Camera not active</div>
+            <Camera className="w-12 h-12 opacity-30" />
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Camera not active</div>
           </div>
         )}
 
@@ -98,8 +97,8 @@ export default function CameraCapture({ onCapture, onCancel }) {
         {phase === 'streaming' && (
           <div style={{
             position: 'absolute', inset: 20,
-            border: '2px solid rgba(59,130,246,0.6)',
-            borderRadius: 8, pointerEvents: 'none',
+            border: '2px solid rgba(79, 70, 229, 0.5)',
+            borderRadius: 12, pointerEvents: 'none',
           }} />
         )}
       </div>
@@ -112,15 +111,15 @@ export default function CameraCapture({ onCapture, onCancel }) {
         {phase === 'idle' && (
           <>
             <button className="btn btn-primary" onClick={startCamera} style={{ flex: 1 }}>
-              📷 Start Camera
+              <Camera className="w-4 h-4" /> Start Camera
             </button>
             <button className="btn btn-ghost" onClick={cancel}>Cancel</button>
           </>
         )}
         {phase === 'streaming' && (
           <>
-            <button className="btn btn-primary pulse-glow" onClick={capturePhoto} style={{ flex: 1 }}>
-              ⚡ Capture Photo
+            <button className="btn btn-primary" onClick={capturePhoto} style={{ flex: 1 }}>
+              <Camera className="w-4 h-4" /> Capture Photo
             </button>
             <button className="btn btn-ghost" onClick={cancel}>Cancel</button>
           </>
@@ -128,9 +127,11 @@ export default function CameraCapture({ onCapture, onCancel }) {
         {phase === 'preview' && (
           <>
             <button className="btn btn-primary" onClick={confirm} style={{ flex: 1 }}>
-              ✅ Submit This Photo
+              <CheckCircle className="w-4 h-4" /> Submit This Photo
             </button>
-            <button className="btn btn-ghost" onClick={retake}>🔄 Retake</button>
+            <button className="btn btn-ghost" onClick={retake}>
+              <RefreshCw className="w-4 h-4" /> Retake
+            </button>
           </>
         )}
       </div>

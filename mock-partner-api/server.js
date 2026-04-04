@@ -10,7 +10,7 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-const SECRET = process.env.MOCK_PARTNER_API_SECRET || 'worksafe_internal_2026';
+const SECRET = (process.env.MOCK_PARTNER_API_SECRET || 'worksafe_internal_2026').trim();
 const PORT   = 4001;
 
 // ── Auth middleware ───────────────────────────────────────────
@@ -18,7 +18,7 @@ app.use((req, res, next) => {
   if (req.path === '/health') return next();
   // Backend sends X-Mock-Secret; accept either variant for compatibility
   const auth = req.headers['x-mock-secret'] || req.headers['x-partner-secret'];
-  if (auth !== SECRET) return res.status(401).json({ error: 'Unauthorized' });
+  if (auth?.trim() !== SECRET) return res.status(401).json({ error: 'Unauthorized' });
   next();
 });
 
