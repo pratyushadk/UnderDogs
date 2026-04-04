@@ -75,7 +75,7 @@ This document was prepared for the DEVTrails 2026 hackathon submission and serve
 
 | Stakeholder | Relevance |
 |-------------|-----------|
-| **Frontend Engineers** (React.js) | UI flows, Mapbox integration, camera/GPS hardware interfaces |
+| **Frontend Engineers** (React.js) | UI flows, Leaflet.js/OpenStreetMap integration, camera/GPS hardware interfaces |
 | **Backend Engineers** (Node.js/Express) | API design, cron scheduling, math model implementation, PostGIS queries |
 | **ML Engineers** (Python/FastAPI) | CLIP inference pipeline, OpenCV Moiré detection, `/validate-img` endpoint |
 | **Database Administrators** | PostgreSQL schema, PostGIS spatial index optimization |
@@ -237,7 +237,7 @@ Upon rider confirmation, the Express.js backend SHALL:
 If the partner API (or mock server) returns a non-200 response or times out after 5 seconds, the system SHALL:
 1. Display an error notification to the rider.
 2. Render a manual onboarding form allowing the rider to:
-   - Select their primary delivery zone from a Mapbox GL JS polygon picker.
+   - Select their primary delivery zone from an interactive **Leaflet.js polygon picker** rendered over OpenStreetMap tiles.
    - Self-declare their estimated daily income (flagged as `manual_baseline: true` in PostgreSQL for actuarial auditing).
 
 ---
@@ -571,8 +571,8 @@ Where `R = 6371 km` (Earth's mean radius).
 |-----------|-----------|-------------|
 | **Application Shell** | React.js 18 | SPA rendered inside partner app WebView |
 | **Styling System** | Tailwind CSS 3.x | Mobile-first responsive layout, min-width 320px |
-| **Zone Visualization** | Mapbox GL JS | Interactive GeoJSON polygon rendering, live DI heatmap overlay |
-| **Manual Zone Picker** | Mapbox GL JS | Polygon click-selection for onboarding fallback (FR-1.6) |
+| **Zone Visualization** | Leaflet.js + `react-leaflet` + OpenStreetMap tiles | Interactive GeoJSON polygon rendering with live DI heatmap color overlay; no API key required |
+| **Manual Zone Picker** | Leaflet.js + `react-leaflet` | Polygon click-selection over OSM tiles for onboarding fallback (FR-1.6); fully open-source |
 | **Premium Display Card** | React component | Weekly premium breakdown, streak status, C_factor indicator |
 | **Disruption Reporter** | React component | Live camera feed only; no gallery access permitted |
 | **Payout Ledger View** | React component | Chronological history of claims, payouts, and premium deductions |
@@ -641,10 +641,12 @@ Where `R = 6371 km` (Earth's mean radius).
 | Razorpay Sandbox | Key ID + Secret | HTTP Basic Auth | No limit (sandbox) | Retry 3x with exponential backoff |
 | Mock Partner API | Internal Secret | `X-Mock-Secret` header | No limit (internal) | N/A |
 
-#### 5.3.4 Mapbox GL JS Interface
-- Loaded via CDN in the React frontend.
-- Authentication via public Access Token (scoped to domain).
-- Tile style: `mapbox://styles/mapbox/dark-v11` for high-contrast zone display.
+#### 5.3.4 Leaflet.js + OpenStreetMap Interface
+- Loaded via the `react-leaflet` npm package (wrapper around Leaflet.js v1.9+).
+- **No API key or authentication required.** Map tiles are served by OpenStreetMap's public HTTPS tile endpoint: `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`.
+- Zone polygons are rendered as GeoJSON `<Polygon>` components with dynamic `fillColor` and `fillOpacity` values derived from the zone's current DI score (green → yellow → red gradient).
+- The `react-leaflet` `<GeoJSON>` layer component handles all polygon click events for the manual zone picker fallback (FR-1.6).
+- **Attribution:** OpenStreetMap tile usage requires the attribution string `© OpenStreetMap contributors` to be rendered on the map, which `react-leaflet` handles automatically.
 
 ---
 
@@ -741,7 +743,7 @@ WorkSafe adopts a **decoupled event-driven microservices architecture** composed
 ```
 ┌────────────────────────────────────────────────────────────────┐
 │                    DELIVERY PARTNER DEVICE                      │
-│    React.js SPA (Tailwind + Mapbox GL JS)                      │
+│    React.js SPA (Tailwind + Leaflet.js + OpenStreetMap)        │
 │    WebView embedded in Zomato/Swiggy Partner App               │
 └────────────────────┬──────────────────────────────────────────-┘
                      │ HTTPS/JWT
@@ -772,7 +774,7 @@ WorkSafe adopts a **decoupled event-driven microservices architecture** composed
 
 | Layer | Technology | Key Responsibility |
 |-------|-----------|-------------------|
-| **Frontend** | React.js 18 + Tailwind CSS + Mapbox GL JS | User interface, WebView camera/GPS access, zone rendering |
+| **Frontend** | React.js 18 + Tailwind CSS + Leaflet.js (`react-leaflet`) + OpenStreetMap | User interface, WebView camera/GPS access, zone rendering — 100% open-source, no API key required |
 | **API Gateway** | Node.js 20 + Express.js 4 | Request routing, JWT validation, business rule enforcement |
 | **Scheduler** | node-cron v3 | Premium calculation cycles (weekly), zone polling loops (15-min) |
 | **Math Engine** | Node.js service layer `/src/models/` | Models 1, 2, 3, 4, 5 computation |

@@ -232,7 +232,7 @@ WorkSafe implements a defense-in-depth approach across four distinct layers:
 |-----------|------|
 | **React.js** | Component-based UI for dashboard, onboarding, premium display, and claim views |
 | **Tailwind CSS** | Rapid, mobile-responsive styling matching modern app aesthetics |
-| **Mapbox GL JS / Leaflet.js** | Interactive polygon visualization over OpenStreetMap base tiles |
+| **Leaflet.js + `react-leaflet`** | Interactive GeoJSON polygon visualization over OpenStreetMap base tiles — 100% open-source, no API key or credit card required |
 | **navigator.geolocation** | Precise lat/long capture for disruption reports |
 | **MediaDevices.getUserMedia()** | Enforced live camera capture within the browser (anti-fraud) |
 

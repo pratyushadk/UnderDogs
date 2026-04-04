@@ -70,7 +70,7 @@ Demonstrate a fully functioning B2B2C parametric insurance system on a live demo
 | 4 | Taps "Subscribe — ₹X this week" | Node.js writes subscription record to PostgreSQL |
 | 5 | Receives confirmation notification | Premium deduction scheduled for Sunday 11:59 PM |
 
-**Alternate Flow (API Unavailable):** Mock API returns a 503. Frontend degrades gracefully to a manual form: rider selects their primary delivery zone from a Mapbox map and enters an estimated daily income. System flags the record as "manual-baseline" for actuarial weighting.
+**Alternate Flow (API Unavailable):** Mock API returns a 503. Frontend degrades gracefully to a manual form: rider selects their primary delivery zone from an interactive **Leaflet.js map** (powered by OpenStreetMap tiles) and enters an estimated daily income. System flags the record as "manual-baseline" for actuarial weighting.
 
 ---
 
@@ -129,7 +129,7 @@ Demonstrate a fully functioning B2B2C parametric insurance system on a live demo
 - React.js micro-frontend embedded inside partner apps (Native WebView).
 - Automated rider data prefill via partner API (or mock API fallback).
 - Mandatory consent dialog: Loss of Income scope only.
-- Manual zone selection fallback via Mapbox GL JS.
+- Manual zone selection fallback via **Leaflet.js + `react-leaflet`** rendered over OpenStreetMap tiles (no API key required).
 - Mock API layer in place of live Zomato/Swiggy partner integrations during hackathon.
 
 ### 4.2 Dynamic Weekly Premium Engine
@@ -160,7 +160,7 @@ Demonstrate a fully functioning B2B2C parametric insurance system on a live demo
 - PostgreSQL claim record write with full audit trail.
 
 ### 4.6 Analytics Dashboard (Underwriter View)
-- Zone-level DI heatmap overlaid on Mapbox visualization.
+- Zone-level DI heatmap overlaid on **Leaflet.js + OpenStreetMap** visualization (GeoJSON polygons colored by DI severity).
 - Real-time premium vs. payout ledger (float exposure).
 - C_factor distribution (how many riders are being penalized vs. rewarded).
 - Claim rejection log (Haversine failures, Moiré detections).
@@ -218,7 +218,7 @@ The WorkSafe architecture is intentionally decoupled to ensure each layer can sc
 
 | Layer | Technology | Product Rationale |
 |-------|------------|-------------------|
-| **Frontend** | React.js + Tailwind CSS + Mapbox GL JS | Embeds natively into any partner WebView. Mapbox renders live zone heatmaps. Tailwind ensures mobile-first styling with minimal bundle size. |
+| **Frontend** | React.js + Tailwind CSS + **Leaflet.js (`react-leaflet`) + OpenStreetMap** | Embeds natively into any partner WebView. Leaflet.js renders live GeoJSON zone heatmaps over free OSM tiles — zero API key required, no credit card needed. Tailwind ensures mobile-first styling with minimal bundle size. |
 | **Backend API Gateway** | Node.js + Express.js + node-cron | JSON-native, non-blocking I/O perfectly suited for concurrent multi-API polling across hundreds of city polygons. `node-cron` manages both the weekly premium cycle and the 15-minute disruption polling loop in a single runtime. |
 | **Geospatial Engine** | PostgreSQL + PostGIS | Offloads all spatial math from Node.js. `ST_Contains` queries identify affected riders at database speed. Zone polygons stored as GeoJSON (SRID 4326). |
 | **AI/Vision Microservice** | Python + FastAPI + Hugging Face CLIP + OpenCV | Isolated from the main transaction service. Can be retrained or swapped (e.g., CLIP → custom model) without touching the financial pipeline. FastAPI ensures sub-200ms inference for real-time fraud gate performance. |
