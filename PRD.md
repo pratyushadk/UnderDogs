@@ -1,7 +1,6 @@
 # Product Requirements Document (PRD)
 ## System: WorkSafe – AI-Powered Parametric Income Protection for Gig Workers
 **Version:** 1.0.0 | **Date:** April 4, 2026 | **Team:** UnderDogs (DEVTrails 2026)
-**Status:** Hackathon Submission Draft
 
 ---
 
