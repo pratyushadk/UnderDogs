@@ -16,14 +16,6 @@
 
 ---
 
-### Revision History
-
-| Version | Date | Author | Description |
-|---------|------|--------|-------------|
-| 1.0.0 | April 4, 2026 | Pratyush Adhikari | Initial draft |
-| 2.0.0 | April 4, 2026 | Pratyush Adhikari | Comprehensive enhancement — IEEE 830 aligned, requirement IDs added, NFRs expanded, data dictionary included |
-
----
 
 ## Table of Contents
 
