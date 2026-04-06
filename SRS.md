@@ -1,6 +1,5 @@
 # Software Requirements Specification (SRS)
 ## WorkSafe: AI-Powered Parametric Income Protection for India's Gig Economy
-> Prepared in accordance with IEEE Std 830-1998 (Software Requirements Specifications)
 
 ---
 
