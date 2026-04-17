@@ -1,17 +1,21 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Shield, Eye, EyeOff, Loader } from 'lucide-react';
 import { login as loginApi } from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
 export default function Login() {
   const navigate   = useNavigate();
-  const { login }  = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
 
   const [form, setForm] = useState({ identifier: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
+
+  if (!authLoading && user) {
+    return <Navigate to={user.role === 'ADMIN' ? '/admin' : '/app/dashboard'} replace />;
+  }
 
   const isEmail = form.identifier.includes('@');
 

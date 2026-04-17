@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Shield, Eye, EyeOff, Loader, CheckCircle } from 'lucide-react';
 import { signup as signupApi } from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -34,7 +34,7 @@ function PasswordStrength({ password }) {
 
 export default function Signup() {
   const navigate  = useNavigate();
-  const { login } = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
 
   const [form, setForm] = useState({ name: '', identifier: '', password: '', confirm: '' });
   const [showPw, setShowPw]    = useState(false);
@@ -42,6 +42,10 @@ export default function Signup() {
   const [error, setError]      = useState('');
   const [emailSent, setEmailSent] = useState(false);  // show check-email screen
   const [signedUpEmail, setSignedUpEmail] = useState('');
+
+  if (!authLoading && user) {
+    return <Navigate to={user.role === 'ADMIN' ? '/admin' : '/app/dashboard'} replace />;
+  }
 
   const isEmail = form.identifier.includes('@');
 

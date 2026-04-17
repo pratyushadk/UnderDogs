@@ -35,6 +35,7 @@ import PaymentHistory   from './pages/PaymentHistory.jsx';
 import InsuranceDetails from './pages/InsuranceDetails.jsx';
 import LoyaltyPage      from './pages/LoyaltyPage.jsx';
 import VerifyEmail      from './pages/VerifyEmail.jsx';
+import StaticPage       from './pages/StaticPage.jsx';
 
 // Admin Pages
 import AdminLogin       from './pages/admin/AdminLogin.jsx';
@@ -55,7 +56,7 @@ function RequireAuth({ children, adminOnly = false }) {
 
   if (!user) {
     const isAdminRoute = location.pathname.startsWith('/admin');
-    return <Navigate to={isAdminRoute ? '/admin/login' : '/login'} state={{ from: location }} replace />;
+    return <Navigate to={isAdminRoute ? '/admin/login' : '/'} state={{ from: location }} replace />;
   }
 
   if (adminOnly && user.role !== 'ADMIN') return <Navigate to="/app/dashboard" replace />;
@@ -288,9 +289,10 @@ function AppRoutes() {
       <Route path="/login"        element={<Login       />} />
       <Route path="/signup"       element={<Signup      />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/p/:slug"      element={<StaticPage  />} />
 
       {/* Authenticated rider app */}
-      <Route path="/app/onboard"   element={<RequireAuth><AppShell><Onboarding /></AppShell></RequireAuth>} />
+      <Route path="/app/onboard"   element={<RequireAuth><Onboarding /></RequireAuth>} />
       <Route path="/app/dashboard" element={<RequireAuth><AppShell><Dashboard  /></AppShell></RequireAuth>} />
       <Route path="/app/report"    element={<RequireAuth><AppShell><Report     /></AppShell></RequireAuth>} />
       <Route path="/app/payments"  element={<RequireAuth><AppShell><PaymentHistory /></AppShell></RequireAuth>} />

@@ -1,39 +1,206 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Shield, UserCheck, MapPin, CheckCircle, ChevronRight, Search, Activity, Zap, Star, CreditCard, Loader } from 'lucide-react';
-import { fetchProfile, submitOnboarding, fetchZones, createPaymentOrder, verifyPayment } from '../services/api.js';
+import { useNavigate, Link } from 'react-router-dom';
+import {
+  Shield, UserCheck, MapPin, CheckCircle, ChevronRight,
+  Search, Activity, Zap, Star, CreditCard, Loader, ArrowLeft
+} from 'lucide-react';
+import {
+  fetchProfile, submitOnboarding, fetchZones,
+  createPaymentOrder, verifyPayment,
+} from '../services/api.js';
 import ZoneMap from '../components/ZoneMap.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
+/* ─── constants ─────────────────────────────────────────── */
 const PLATFORM_COLOR = {
-  Zomato: 'text-red-500 bg-red-50 border-red-100',
-  Swiggy: 'text-orange-500 bg-orange-50 border-orange-100',
-  Blinkit: 'text-amber-500 bg-amber-50 border-amber-100',
-  Porter: 'text-blue-500 bg-blue-50 border-blue-100',
-  Dunzo: 'text-purple-500 bg-purple-50 border-purple-100',
+  Zomato:  { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' },
+  Swiggy:  { bg: '#FFF7ED', text: '#EA580C', border: '#FED7AA' },
+  Blinkit: { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A' },
+  Porter:  { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE' },
+  Dunzo:   { bg: '#F5F3FF', text: '#7C3AED', border: '#DDD6FE' },
 };
 
 const DEMO_IDS = [
-  'ZOMATO_DEMO_RIDER_001', 'SWIGGY_DEMO_RIDER_001', 'ZOMATO_DEMO_RIDER_002',
-  'BLINKIT_RIDER_001', 'SWIGGY_DEMO_RIDER_002', 'PORTER_RIDER_001',
+  'ZOMATO_DEMO_RIDER_001', 'SWIGGY_DEMO_RIDER_001',
+  'ZOMATO_DEMO_RIDER_002', 'BLINKIT_RIDER_001',
+  'SWIGGY_DEMO_RIDER_002', 'PORTER_RIDER_001',
 ];
 
+const STEPS = [
+  { id: 1, icon: UserCheck, label: 'Link Account',   sub: 'Verify your rider identity' },
+  { id: 2, icon: MapPin,    label: 'Choose Zone',    sub: 'Pick your coverage area' },
+  { id: 3, icon: Shield,    label: 'Review Policy',  sub: 'Confirm your protection' },
+  { id: 4, icon: CreditCard,label: 'Activate',       sub: 'Pay & start coverage' },
+];
+
+/* ─── helpers ───────────────────────────────────────────── */
+function fmt(n) {
+  if (n == null) return '—';
+  return `₹${Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
+}
+
+/* ─── Left Panel ─────────────────────────────────────────── */
+function LeftPanel({ step }) {
+  return (
+    <div className="ob-left" style={{
+      background: 'linear-gradient(160deg, #0F172A 0%, #1E1B4B 100%)',
+      display: 'flex', flexDirection: 'column', padding: '40px 32px',
+    }}>
+      {/* Logo */}
+      <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 56 }}>
+        <div style={{ width: 36, height: 36, background: '#4F46E5', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Shield size={18} color="white" strokeWidth={2.5} />
+        </div>
+        <span style={{ fontSize: 18, fontWeight: 800, color: 'white', letterSpacing: '-0.3px' }}>
+          Work<span style={{ color: '#818CF8' }}>Safe</span>
+        </span>
+      </Link>
+
+      {/* Headline */}
+      <div style={{ marginBottom: 48 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: 'white', letterSpacing: '-0.5px', lineHeight: 1.3, marginBottom: 10 }}>
+          Set up your income protection
+        </h1>
+        <p style={{ fontSize: 13.5, color: '#64748B', lineHeight: 1.7 }}>
+          Takes under 3 minutes. Zero paperwork after this.
+        </p>
+      </div>
+
+      {/* Steps */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {STEPS.map((s, idx) => {
+          const done    = step > s.id;
+          const active  = step === s.id;
+          return (
+            <div key={s.id} style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: '12px 0' }}>
+              {/* Icon/number */}
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: done ? '#10B981' : active ? '#4F46E5' : 'rgba(255,255,255,0.06)',
+                border: `2px solid ${done ? '#10B981' : active ? '#4F46E5' : 'rgba(255,255,255,0.08)'}`,
+                transition: 'all 0.4s ease',
+              }}>
+                {done
+                  ? <CheckCircle size={16} color="white" strokeWidth={2.5} />
+                  : <s.icon size={15} color={active ? 'white' : '#475569'} strokeWidth={2} />
+                }
+              </div>
+              <div style={{ paddingTop: 2 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: done ? '#10B981' : active ? 'white' : '#475569', transition: 'color 0.3s' }}>
+                  {s.label}
+                </div>
+                <div style={{ fontSize: 12, color: active ? '#94A3B8' : '#334155', marginTop: 2 }}>{s.sub}</div>
+              </div>
+              {/* Connector line */}
+              {idx < STEPS.length - 1 && (
+                <div style={{
+                  position: 'absolute', left: 50, marginTop: 48,
+                  width: 2, height: 28,
+                  background: done ? '#10B981' : 'rgba(255,255,255,0.06)',
+                  borderRadius: 1, transition: 'background 0.4s',
+                }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Trust badges */}
+      <div style={{ marginTop: 'auto', paddingTop: 32, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        {[
+          { icon: Shield, text: 'Your data is encrypted & private' },
+          { icon: Zap,    text: 'Payouts in under 2 hours' },
+          { icon: CheckCircle, text: 'Cancel anytime, no lock-in' },
+        ].map(item => (
+          <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <item.icon size={13} color="#4F46E5" />
+            <span style={{ fontSize: 12.5, color: '#475569' }}>{item.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Right Panel shell ──────────────────────────────────── */
+function RightPanel({ children }) {
+  return (
+    <div className="ob-right">
+      <div style={{ width: '100%', maxWidth: 540 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Step header ────────────────────────────────────────── */
+function StepHeader({ step, title, sub }) {
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 }}>
+        Step {step} of 4
+      </div>
+      <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px', marginBottom: 6 }}>{title}</h2>
+      <p style={{ fontSize: 14.5, color: '#64748B', lineHeight: 1.65 }}>{sub}</p>
+    </div>
+  );
+}
+
+/* ─── Error banner ───────────────────────────────────────── */
+function ErrorBanner({ msg }) {
+  if (!msg) return null;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, marginBottom: 20 }}>
+      <Activity size={14} color="#DC2626" />
+      <span style={{ fontSize: 13.5, color: '#DC2626', fontWeight: 500 }}>{msg}</span>
+    </div>
+  );
+}
+
+/* ─── Primary button ─────────────────────────────────────── */
+function PrimaryBtn({ onClick, disabled, loading, children }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled || loading}
+      style={{
+        width: '100%', padding: '14px', borderRadius: 10,
+        background: disabled || loading ? '#E2E8F0' : '#4F46E5',
+        color: disabled || loading ? '#94A3B8' : 'white',
+        border: 'none', fontSize: 15, fontWeight: 700, cursor: disabled || loading ? 'not-allowed' : 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        transition: 'background 0.2s, transform 0.15s, box-shadow 0.15s',
+        boxShadow: disabled || loading ? 'none' : '0 4px 16px rgba(79,70,229,0.35)',
+      }}
+      onMouseEnter={e => { if (!disabled && !loading) { e.currentTarget.style.background = '#4338CA'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+      onMouseLeave={e => { e.currentTarget.style.background = (disabled || loading) ? '#E2E8F0' : '#4F46E5'; e.currentTarget.style.transform = 'none'; }}
+    >
+      {loading ? <><Loader size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading…</> : children}
+    </button>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Main Onboarding Component
+═══════════════════════════════════════════════════════════ */
 export default function Onboarding() {
   const navigate  = useNavigate();
   const { user }  = useAuth();
-  const [step, setStep] = useState(1);
-  const [riderId, setRiderId] = useState('');
-  const [profile, setProfile] = useState(null);
-  const [zones, setZones] = useState([]);
-  const [selectedZ, setSelectedZ] = useState('');
-  const [consent, setConsent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [activating, setActivating] = useState(false);
-  // Payment step state
-  const [paymentLoading, setPaymentLoading] = useState(false);
-  const [onboardedRider, setOnboardedRider] = useState(null);
 
+  const [step,           setStep]          = useState(1);
+  const [riderId,        setRiderId]       = useState('');
+  const [profile,        setProfile]       = useState(null);
+  const [zones,          setZones]         = useState([]);
+  const [selectedZ,      setSelectedZ]     = useState('');
+  const [consent,        setConsent]       = useState(false);
+  const [loading,        setLoading]       = useState(false);
+  const [activating,     setActivating]    = useState(false);
+  const [paymentLoading, setPaymentLoading]= useState(false);
+  const [error,          setError]         = useState('');
+  const [onboardedRider, setOnboardedRider]= useState(null);
+
+  /* ── Handlers ─────────────────────────────────────── */
   const handleFetch = async () => {
     if (!riderId.trim()) return setError('Please enter your Rider ID.');
     setLoading(true); setError('');
@@ -41,66 +208,49 @@ export default function Onboarding() {
       const res = await fetchProfile(riderId.trim());
       setProfile(res.data);
       const z = await fetchZones();
-      setZones(z.data ?? []);
-      if (z.data?.length) setSelectedZ(z.data[0].zone_id);
+      const zData = z.data ?? [];
+      setZones(zData);
+      if (zData.length) setSelectedZ(zData[0].zone_id);
       setStep(2);
     } catch (e) {
-      setError(e.response?.data?.message || 'Could not fetch profile. Check your Rider ID.');
+      setError(e.response?.data?.message || 'Could not find that Rider ID. Please check and try again.');
     } finally { setLoading(false); }
   };
 
-  // Step 3: submit onboarding (creates rider + policy), then go to payment step
   const handleActivate = async () => {
     if (!selectedZ) return setError('Please select a zone.');
-    if (!consent) return setError('Please accept the coverage terms.');
+    if (!consent)   return setError('Please accept the coverage terms.');
     setActivating(true); setError('');
     try {
-      const res = await submitOnboarding({
-        platform_rider_id: riderId,
-        zone_id: selectedZ,
-        consent: true,
-      });
+      const res = await submitOnboarding({ platform_rider_id: riderId, zone_id: selectedZ, consent: true });
       setOnboardedRider(res.data);
-      setStep(4); // go to payment step
+      setStep(4);
     } catch (e) {
       setError(e.response?.data?.error || 'Activation failed. Please try again.');
     } finally { setActivating(false); }
   };
 
-  // Step 4: launch Razorpay checkout
   const handlePayment = async () => {
     setPaymentLoading(true); setError('');
     try {
       const orderRes = await createPaymentOrder({});
       const { order_id, amount, currency, key_id, txn_id, prefill } = orderRes.data;
-
       const options = {
-        key:      key_id,
-        amount,
-        currency,
-        name:     'WorkSafe',
-        description: 'Weekly Income Protection Premium',
+        key: key_id, amount, currency,
+        name: 'WorkSafe', description: 'Weekly Income Protection Premium',
         order_id,
-        prefill:  { name: user?.name || '', email: prefill?.email || '' },
-        theme:    { color: '#4F46E5' },
+        prefill: { name: user?.name || '', email: prefill?.email || '' },
+        theme: { color: '#4F46E5' },
         handler: async (response) => {
           try {
-            await verifyPayment({
-              txn_id,
-              razorpay_order_id:   response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature:  response.razorpay_signature,
-            });
+            await verifyPayment({ txn_id, razorpay_order_id: response.razorpay_order_id, razorpay_payment_id: response.razorpay_payment_id, razorpay_signature: response.razorpay_signature });
             navigate('/app/dashboard');
           } catch {
             setError('Payment verified but policy activation failed. Contact support.');
           }
         },
-        modal: {
-          ondismiss: () => setPaymentLoading(false),
-        },
+        modal: { ondismiss: () => setPaymentLoading(false) },
       };
-
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (e) {
@@ -109,309 +259,244 @@ export default function Onboarding() {
     }
   };
 
-  const p = profile;
-  const platColor = p ? (PLATFORM_COLOR[p.platform] ?? 'text-slate-500 bg-slate-50') : 'text-slate-500';
-  const eAvg = p?.e_avg ?? 0;
-  const payoutHr = (eAvg * 0.85).toFixed(2);
+  const p        = profile;
+  const eAvg     = p?.e_avg ?? 0;
+  const payoutHr = (eAvg * 0.85).toFixed(0);
+  const platC    = p ? (PLATFORM_COLOR[p.platform] ?? { bg: '#F8FAFC', text: '#334155', border: '#E2E8F0' }) : null;
 
+  /* ── Layout ───────────────────────────────────────── */
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10 lg:py-14 space-y-10 min-h-screen bg-white">
-      {/* ── Brand Header ── */}
-      <div className="text-center space-y-6">
-        <div className="flex justify-center flex-col items-center gap-4">
-          <div className="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center shadow-lg transform transition hover:scale-105 cursor-pointer">
-            <Shield className="text-white w-8 h-8" strokeWidth={2.5} />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-              WorkSafe<span className="text-brand-500">.</span>
-            </h1>
-            <p className="text-lg text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
-              Parametric Income Protection. Honest pricing, lightning-fast payouts.
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className="ob-split" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+        .ob-fade { animation: fadeUp 0.45s ease-out both; }
+      `}</style>
 
-      {/* ── Stepper ── */}
-      <nav className="flex items-center justify-center space-x-4 max-w-sm mx-auto pt-4">
-        {[
-          { id: 1, label: 'Identity', icon: UserCheck },
-          { id: 2, label: 'Zone', icon: MapPin },
-          { id: 3, label: 'Review', icon: Shield },
-          { id: 4, label: 'Pay', icon: CreditCard },
-        ].map((s, idx) => (
-          <div key={s.id} className="flex items-center">
-            <div className={`p-3 rounded-xl transition-all duration-500 font-semibold text-sm flex items-center gap-2 ${step === s.id ? 'bg-brand-500 text-white shadow-md' : step > s.id ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>
-              <s.icon className="w-4 h-4" strokeWidth={step === s.id ? 3 : 2} />
-              <span className={step !== s.id ? 'hidden sm:block' : 'block'}>{s.label}</span>
-            </div>
-            {idx < 3 && <div className={`w-6 h-0.5 mx-2 rounded-full transition-colors duration-500 ${step > idx + 1 ? 'bg-emerald-200' : 'bg-slate-200'}`} />}
-          </div>
-        ))}
-      </nav>
+      <LeftPanel step={step} />
 
-      {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-600 px-5 py-4 rounded-xl text-sm font-semibold flex items-center gap-3 animate-slide-up shadow-sm">
-          <Activity className="w-5 h-5 flex-shrink-0 text-rose-500" />
-          {error}
-        </div>
-      )}
+      <RightPanel>
 
-      {/* ════════════════════ STEP 1 ════════════════════ */}
-      {step === 1 && (
-        <div className="card p-8 animate-slide-up space-y-8 max-w-xl mx-auto mt-10">
-          <div className="text-center space-y-2 mb-8">
-            <h2 className="text-2xl font-bold text-slate-900 leading-tight">Link Your Account</h2>
-            <p className="text-slate-500 font-medium">We sync directly with your primary delivery platform to verify hours and optimize your protection.</p>
-          </div>
+        {/* ════ STEP 1 — Link Account ════ */}
+        {step === 1 && (
+          <div className="ob-fade">
+            <StepHeader step={1} title="Link your rider account" sub="We verify your identity with your delivery platform to calculate your exact income benchmark." />
+            <ErrorBanner msg={error} />
 
-          <div className="space-y-4 pt-2">
-            <div className="relative group">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 absolute -top-2.5 left-4 z-10 bg-white px-1 transition-colors group-focus-within:text-brand-500">Partner Rider ID</label>
-              <input
-                className="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 font-mono text-lg rounded-xl px-5 py-4 focus:outline-none focus:ring-4 focus:ring-brand-50 focus:border-brand-500 transition-all shadow-sm"
-                placeholder="Ex. ZOMATO_DEMO_RIDER_001"
-                value={riderId}
-                onChange={e => setRiderId(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleFetch()}
-              />
-              <Search className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-            </div>
-          </div>
-
-          <button className="btn-premium-primary py-4 text-lg shadow-lg hover:shadow-xl group overflow-hidden" onClick={handleFetch} disabled={loading}>
-            <div className="relative z-10 flex items-center justify-center gap-2">
-              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Fetch Profile'}
-              {!loading && <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
-            </div>
-          </button>
-
-          <div className="relative flex items-center py-6">
-            <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink mx-4 text-xs font-bold tracking-widest text-slate-400 uppercase">Or select demo ID</span>
-            <div className="flex-grow border-t border-slate-200"></div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {DEMO_IDS.map(id => (
-              <button key={id} className="text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 hover:text-brand-600 border border-slate-200 p-3 rounded-lg transition-all truncate shadow-sm hover:shadow"
-                onClick={() => setRiderId(id)}>
-                {id.split('_').slice(0,2).join('_')}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════════ STEP 2 ════════════════════ */}
-      {step === 2 && p && (
-        <div className="animate-slide-up space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Identity Card */}
-            <div className="card shadow-md relative overflow-hidden p-0 h-full">
-              <div className={`absolute top-0 right-0 w-32 h-32 -mt-8 -mr-8 rounded-full opacity-10 blur-2xl ${platColor.split(' ')[0]}`} />
-            
-            <div className="p-8 space-y-8 relative z-10">
-              <div className="flex items-center gap-6">
-                <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center border border-slate-200 shadow-sm shrink-0">
-                  <span className="text-3xl font-extrabold text-slate-800 uppercase">{p.name?.[0]}</span>
-                </div>
-                <div className="space-y-1.5 flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-2xl font-bold text-slate-900 truncate">{p.name}</h3>
-                    <CheckCircle className="text-emerald-500 w-5 h-5 shrink-0" />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2.5 py-1 text-xs font-bold rounded-md border ${platColor}`}>{p.platform}</span>
-                    <span className="text-sm font-medium text-slate-500 truncate">{p.city}</span>
-                  </div>
-                </div>
+            {/* Input */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: '#374151', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Partner Rider ID
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  value={riderId}
+                  onChange={e => setRiderId(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleFetch()}
+                  placeholder="e.g. ZOMATO_DEMO_RIDER_001"
+                  style={{
+                    width: '100%', padding: '13px 44px 13px 16px', borderRadius: 10,
+                    border: '1.5px solid #E2E8F0', background: 'white', fontSize: 15,
+                    color: '#0F172A', outline: 'none', boxSizing: 'border-box',
+                    fontFamily: 'inherit', transition: 'border-color 0.2s',
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#4F46E5'}
+                  onBlur={e => e.target.style.borderColor = '#E2E8F0'}
+                />
+                <Search size={16} color="#94A3B8" style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)' }} />
               </div>
+              <p style={{ fontSize: 12.5, color: '#94A3B8', marginTop: 6 }}>Your Rider ID is shown in your delivery app under Profile → ID.</p>
+            </div>
 
-              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-100">
-                <div className="space-y-1">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Benchmark</div>
-                  <div className="text-xl font-bold text-slate-900">₹{Number(p.e_avg).toFixed(0)}<span className="text-base font-semibold text-slate-400">/hr</span></div>
+            <PrimaryBtn onClick={handleFetch} loading={loading} disabled={!riderId.trim()}>
+              Verify & Continue <ChevronRight size={16} />
+            </PrimaryBtn>
+
+            {/* Demo IDs */}
+            <div style={{ margin: '28px 0 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ flex: 1, height: 1, background: '#E2E8F0' }} />
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: '#94A3B8', whiteSpace: 'nowrap' }}>Or use a demo ID</span>
+              <div style={{ flex: 1, height: 1, background: '#E2E8F0' }} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }} className="ob-demo-grid">
+              {DEMO_IDS.map(id => (
+                <button key={id} onClick={() => setRiderId(id)} style={{
+                  padding: '9px 10px', borderRadius: 8, border: '1.5px solid #E2E8F0',
+                  background: riderId === id ? '#EEF2FF' : 'white',
+                  borderColor: riderId === id ? '#C7D2FE' : '#E2E8F0',
+                  fontSize: 11.5, fontWeight: 600, color: riderId === id ? '#4F46E5' : '#475569',
+                  cursor: 'pointer', transition: 'all 0.15s', textAlign: 'center',
+                  fontFamily: 'inherit',
+                }}>
+                  {id.split('_').slice(0, 2).join('_')}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ════ STEP 2 — Zone ════ */}
+        {step === 2 && p && (
+          <div className="ob-fade">
+            <button onClick={() => setStep(1)} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 24, fontFamily: 'inherit', fontWeight: 600 }}>
+              <ArrowLeft size={14} /> Back
+            </button>
+            <StepHeader step={2} title="Choose your coverage zone" sub="Your zone determines your disruption thresholds and premium rate. Select where you mainly operate." />
+            <ErrorBanner msg={error} />
+
+            {/* Rider profile summary */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px', background: 'white', border: '1.5px solid #E2E8F0', borderRadius: 12, marginBottom: 24 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: '#4F46E5', flexShrink: 0 }}>
+                {p.name?.[0]?.toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A' }}>{p.name}</span>
+                  <CheckCircle size={14} color="#10B981" />
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: platC?.text, background: platC?.bg, border: `1px solid ${platC?.border}`, padding: '2px 8px', borderRadius: 6 }}>{p.platform}</span>
                 </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Shift</div>
-                  <div className="text-xl font-bold text-slate-900">{p.shift_pattern?.start}h</div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Rating</div>
-                  <div className="text-xl font-bold text-amber-500 flex items-center gap-1.5 mt-1 border border-amber-200 bg-amber-50 px-2 py-0.5 rounded-md w-fit"><Star className="w-4 h-4 fill-current" /> {p.rating}</div>
-                </div>
+                <div style={{ fontSize: 12.5, color: '#64748B', marginTop: 3 }}>{p.city} · ₹{Number(p.e_avg).toFixed(0)}/hr benchmark · {p.rating} <Star size={10} color="#F59E0B" fill="#F59E0B" /></div>
               </div>
             </div>
-          </div>
 
-          {/* Map Selection */}
-          <div className="card p-0 overflow-hidden shadow-md">
-            <div className="p-6 pb-4 border-b border-slate-100 bg-white">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-brand-500" strokeWidth={2.5} />
-                Select Primary Operational Zone
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">This determines your coverage baseline and hazard thresholds.</p>
-            </div>
-            
-            <div className="h-[300px] w-full relative bg-slate-50">
-              <ZoneMap zones={zones} selectedZone={selectedZ} onZoneSelect={setSelectedZ} height={300} />
-              
-              <div className="absolute bottom-4 left-4 right-4 z-[400] bg-white/90 backdrop-blur-sm p-4 rounded-xl border border-slate-200 shadow-lg flex items-center">
-                <span className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-brand-500" />
-                  {selectedZ ? selectedZ.replace('Zone_', '').replace(/_/g, ' ') : 'Select a zone on the map or list below...'}
-                </span>
+            {/* Map */}
+            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1.5px solid #E2E8F0', marginBottom: 16, background: 'white' }}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <MapPin size={14} color="#4F46E5" />
+                <span style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>Select your primary zone</span>
               </div>
+              <ZoneMap zones={zones} selectedZone={selectedZ} onZoneSelect={setSelectedZ} height={260} />
             </div>
-            
-            <div className="p-4 grid grid-cols-2 gap-3 bg-slate-50 max-h-48 overflow-y-auto">
+
+            {/* Zone grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 24 }} className="ob-zone-grid">
               {zones.map(z => {
-                const isSelected = selectedZ === z.zone_id;
+                const active = selectedZ === z.zone_id;
                 return (
-                  <button key={z.zone_id}
-                    className={`flex items-center p-3 rounded-xl border-2 transition-all text-left bg-white ${isSelected ? 'border-brand-500 shadow-md ring-2 ring-brand-100' : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:shadow-sm'}`}
-                    onClick={() => setSelectedZ(z.zone_id)}>
-                    <span className={`text-sm font-bold truncate ${isSelected ? 'text-brand-700' : 'text-slate-700'}`}>
-                      {z.zone_id.replace('Zone_', '').replace(/_/g, ' ')}
-                    </span>
+                  <button key={z.zone_id} onClick={() => setSelectedZ(z.zone_id)} style={{
+                    padding: '10px 14px', borderRadius: 8, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+                    border: `2px solid ${active ? '#4F46E5' : '#E2E8F0'}`,
+                    background: active ? '#EEF2FF' : 'white',
+                    fontSize: 13, fontWeight: 600, color: active ? '#4F46E5' : '#475569',
+                    transition: 'all 0.15s',
+                  }}>
+                    {z.zone_id.replace('Zone_', '').replace(/_/g, ' ')}
                   </button>
-                )
+                );
               })}
+            </div>
+
+            <PrimaryBtn onClick={() => setStep(3)} disabled={!selectedZ}>
+              Continue to Review <ChevronRight size={16} />
+            </PrimaryBtn>
+          </div>
+        )}
+
+        {/* ════ STEP 3 — Review ════ */}
+        {step === 3 && p && (
+          <div className="ob-fade">
+            <button onClick={() => setStep(2)} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 24, fontFamily: 'inherit', fontWeight: 600 }}>
+              <ArrowLeft size={14} /> Back
+            </button>
+            <StepHeader step={3} title="Review your policy" sub="Confirm everything looks right before activating your income protection." />
+            <ErrorBanner msg={error} />
+
+            {/* Policy summary card */}
+            <div style={{ background: 'white', border: '1.5px solid #E2E8F0', borderRadius: 14, overflow: 'hidden', marginBottom: 24 }}>
+              <div style={{ background: 'linear-gradient(90deg, #4F46E5, #6366F1)', padding: '20px 24px' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 4 }}>WorkSafe Income Policy</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: 'white' }}>{selectedZ.replace('Zone_', '').replace(/_/g, ' ')} Coverage</div>
+              </div>
+              <div style={{ padding: '20px 24px' }}>
+                {[
+                  { label: 'Rider',              value: p.name },
+                  { label: 'Platform',           value: p.platform },
+                  { label: 'Income Benchmark',   value: `₹${Number(p.e_avg).toFixed(0)} / hr` },
+                  { label: 'Payout Rate',        value: `₹${payoutHr} / disrupted hr` },
+                  { label: 'Trigger',            value: 'DI > 75 (auto-detected)' },
+                  { label: 'Coverage Zone',      value: selectedZ.replace('Zone_', '').replace(/_/g, ' ') },
+                  { label: 'Settlement Time',    value: 'Under 2 hours · Automatic' },
+                ].map((row, i) => (
+                  <div key={row.label} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                    padding: '10px 0', borderBottom: i < 6 ? '1px solid #F1F5F9' : 'none',
+                  }}>
+                    <span style={{ fontSize: 13.5, color: '#64748B' }}>{row.label}</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', textAlign: 'right', maxWidth: '60%' }}>{row.value}</span>
+                  </div>
+                ))}
               </div>
             </div>
+
+            {/* Consent */}
+            <label style={{
+              display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer',
+              padding: '16px', background: '#F8FAFC', border: '1.5px solid #E2E8F0', borderRadius: 10, marginBottom: 24,
+            }}>
+              <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
+                style={{ width: 16, height: 16, marginTop: 2, accentColor: '#4F46E5', flexShrink: 0 }} />
+              <span style={{ fontSize: 13.5, color: '#374151', lineHeight: 1.6 }}>
+                I authorize WorkSafe to monitor regional disruption data and disburse income replacements of{' '}
+                <strong>₹{payoutHr}/hr</strong> during verified disruptions. I understand payouts are automated and instant.
+              </span>
+            </label>
+
+            <PrimaryBtn onClick={handleActivate} loading={activating} disabled={!consent}>
+              Confirm & Continue to Payment <ChevronRight size={16} />
+            </PrimaryBtn>
           </div>
+        )}
 
-          <button className="btn-premium-primary text-lg py-4 shadow-lg" onClick={() => setStep(3)} disabled={!selectedZ}>
-            Configure Policy Cover
-          </button>
-        </div>
-      )}
+        {/* ════ STEP 4 — Payment ════ */}
+        {step === 4 && (
+          <div className="ob-fade">
+            <StepHeader step={4} title="Activate your protection" sub="Pay your first weekly premium to start your income coverage. Secured by Razorpay." />
+            <ErrorBanner msg={error} />
 
-      {/* ════════════════════ STEP 3 ════════════════════ */}
-      {step === 3 && p && (
-        <div className="animate-slide-up space-y-6">
-          <div className="card shadow-lg p-8 space-y-8 border-t-8 border-t-brand-500">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-6">
-              <h2 className="text-2xl font-bold text-slate-900">Policy Summary</h2>
-              <Shield className="text-brand-500 w-8 h-8 opacity-80" />
+            {/* Summary strip */}
+            <div style={{ background: 'white', border: '1.5px solid #E2E8F0', borderRadius: 12, padding: '20px 24px', marginBottom: 24 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 14 }}>Payment Summary</div>
+              {[
+                { label: 'Coverage Zone',  value: selectedZ?.replace('Zone_', '').replace(/_/g, ' ') },
+                { label: 'Rider ID',       value: riderId },
+                { label: 'Coverage Type', value: 'Parametric Income Protection' },
+              ].map((row, i) => (
+                <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < 2 ? '1px solid #F1F5F9' : 'none' }}>
+                  <span style={{ fontSize: 13.5, color: '#64748B' }}>{row.label}</span>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>{row.value}</span>
+                </div>
+              ))}
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '2px dashed #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>Weekly Premium</span>
+                <span style={{ fontSize: 18, fontWeight: 900, color: '#4F46E5' }}>Calculated at checkout</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { label: 'Coverage Area', value: selectedZ.replace('Zone_', '').replace(/_/g, ' '), icon: MapPin },
-                { label: 'Security Payout', value: `₹${payoutHr}/h`, icon: Zap },
-                { label: 'Trigger System', value: 'Auto-Detect', icon: Activity },
-              ].map((item, i) => (
-                <div key={i} className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-2">
-                  <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-3 shadow-sm">
-                    <item.icon className="w-4 h-4 text-slate-600" />
-                  </div>
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.label}</div>
-                  <div className="text-base font-bold text-slate-800">{item.value}</div>
+            <PrimaryBtn onClick={handlePayment} loading={paymentLoading}>
+              <CreditCard size={16} /> Pay & Start Coverage
+            </PrimaryBtn>
+
+            <button onClick={() => navigate('/app/dashboard')} style={{
+              width: '100%', marginTop: 12, padding: '12px', background: 'none', border: 'none',
+              fontSize: 13.5, color: '#94A3B8', cursor: 'pointer', fontFamily: 'inherit',
+              textDecoration: 'underline dotted',
+            }}>
+              Skip for now (demo mode)
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 28, paddingTop: 24, borderTop: '1px solid #E2E8F0' }}>
+              {['Razorpay Secured', 'PCI DSS Compliant', '256-bit Encrypted'].map(t => (
+                <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <CheckCircle size={11} color="#10B981" />
+                  <span style={{ fontSize: 11.5, color: '#94A3B8' }}>{t}</span>
                 </div>
               ))}
             </div>
-
-            <div className="bg-brand-50 rounded-2xl p-6 border border-brand-100 space-y-4">
-              <div className="text-sm font-bold text-brand-700 uppercase tracking-widest flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" /> Final Agreement
-              </div>
-              <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                I hereby authorize WorkSafe to monitor regional environmental data and my delivery session logs.
-                I understand that settlements of <span className="text-slate-900 font-bold bg-white px-2 py-0.5 rounded border border-slate-200 mx-1 shadow-sm">₹{payoutHr}/hr</span> are calculated based on
-                verified work hours during severe disruptions. All payouts are disbursed instantly.
-              </p>
-              
-              <label className="flex items-start gap-4 cursor-pointer group mt-6 bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-brand-300 transition-colors">
-                <div className="relative flex items-center pt-0.5">
-                  <input
-                    type="checkbox"
-                    className="w-5 h-5 rounded border-slate-300 text-brand-500 focus:ring-brand-500"
-                    checked={consent}
-                    onChange={e => setConsent(e.target.checked)}
-                  />
-                </div>
-                <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">
-                  I accept the parametric coverage governance and data privacy protocol.
-                </span>
-              </label>
-            </div>
           </div>
+        )}
 
-          <div className="flex gap-4">
-            <button className="btn-premium-secondary flex-1 py-4 text-base" onClick={() => setStep(2)}>Back</button>
-            <button className="btn-premium-primary flex-[2] py-4 text-lg relative overflow-hidden shadow-lg"
-              onClick={handleActivate} disabled={activating || !consent}>
-              <div className="flex items-center justify-center gap-2">
-                {activating ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Confirm & Continue'}
-              </div>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════════ STEP 4 — PAYMENT ════════════════════ */}
-      {step === 4 && (
-        <div className="animate-slide-up space-y-6">
-          <div className="card shadow-lg p-8 space-y-6 border-t-8 border-t-indigo-500 max-w-xl mx-auto">
-            <div className="text-center">
-              <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="w-7 h-7 text-indigo-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Activate Protection</h2>
-              <p className="text-slate-500 text-sm leading-relaxed">
-                Pay your first weekly premium to start your income protection. Payments are processed securely via Razorpay.
-              </p>
-            </div>
-
-            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500 font-medium">Coverage Zone</span>
-                <span className="font-bold text-slate-900">{selectedZ?.replace('Zone_', '').replace(/_/g, ' ')}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500 font-medium">Rider ID</span>
-                <span className="font-mono font-bold text-slate-900 text-xs">{riderId}</span>
-              </div>
-              <div className="flex justify-between text-sm border-t border-slate-200 pt-3 mt-3">
-                <span className="text-slate-700 font-bold">Weekly Premium</span>
-                <span className="font-extrabold text-indigo-600 text-lg">Calculated on checkout</span>
-              </div>
-            </div>
-
-            {error && (
-              <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm">{error}</div>
-            )}
-
-            <button
-              className="btn-premium-primary py-4 text-lg shadow-lg"
-              onClick={handlePayment}
-              disabled={paymentLoading}
-            >
-              <div className="flex items-center justify-center gap-2">
-                {paymentLoading
-                  ? <><Loader className="w-5 h-5 animate-spin" /> Opening checkout…</>
-                  : <><CreditCard className="w-5 h-5" /> Pay & Activate Protection</>
-                }
-              </div>
-            </button>
-
-            <p className="text-xs text-center text-slate-400">
-              Secured by Razorpay · ₹100 crore trust mark · PCI DSS compliant
-            </p>
-
-            <button
-              className="w-full text-sm text-slate-400 hover:text-slate-600 font-medium underline"
-              onClick={() => navigate('/app/dashboard')}
-            >
-              Skip for now (demo mode)
-            </button>
-          </div>
-        </div>
-      )}
+      </RightPanel>
     </div>
   );
 }

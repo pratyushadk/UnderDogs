@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { fetchDashboard, fetchClaims, fetchPolicyStatus, fetchZones } from '../services/api.js';
 import ZoneMap from '../components/ZoneMap.jsx';
 import {
@@ -23,6 +24,7 @@ function fmtDt(iso) {
 }
 
 export default function Dashboard() {
+  const navigate   = useNavigate();
   const [tab,    setTab]    = useState('overview');
   const [policy, setPolicy] = useState(null);
   const [stats,  setStats]  = useState(null);
@@ -72,6 +74,12 @@ export default function Dashboard() {
         </div>
       </div>
     );
+  }
+
+  // If no policy exists after loading — user hasn't completed onboarding
+  if (!policy) {
+    navigate('/app/onboard', { replace: true });
+    return null;
   }
 
   const TABS = [
@@ -200,7 +208,7 @@ export default function Dashboard() {
           </div>
 
           {/* Two-column layout */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16, alignItems: 'start' }}>
+          <div className="dashboard-content-grid">
 
             {/* Policy config card */}
             <div className="card">
@@ -314,7 +322,7 @@ export default function Dashboard() {
                   }}>Primary Area</span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <div className="dashboard-grid" style={{ marginBottom: 0, gap: 12 }}>
                   {[
                     {
                       label: 'Disruption Index',
