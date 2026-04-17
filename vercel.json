@@ -2,11 +2,34 @@
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
   "installCommand": "echo 'skip root install'",
-  "rewrites": [
-    { "source": "/auth/:path*",  "destination": "https://worksafe-backend1.onrender.com/auth/:path*" },
-    { "source": "/api/:path*",   "destination": "https://worksafe-backend1.onrender.com/api/:path*" },
-    { "source": "/admin/:path*", "destination": "https://worksafe-backend1.onrender.com/admin/:path*" },
-    { "source": "/health",       "destination": "https://worksafe-backend1.onrender.com/health" },
-    { "source": "/(.*)",         "destination": "/index.html" }
+  "routes": [
+    {
+      "src": "/auth/(.*)",
+      "dest": "https://worksafe-backend1.onrender.com/auth/$1",
+      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      "headers": { "Access-Control-Allow-Origin": "*" }
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "https://worksafe-backend1.onrender.com/api/$1",
+      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      "headers": { "Access-Control-Allow-Origin": "*" }
+    },
+    {
+      "src": "/admin/(.*)",
+      "dest": "https://worksafe-backend1.onrender.com/admin/$1",
+      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      "headers": { "Access-Control-Allow-Origin": "*" }
+    },
+    {
+      "src": "/health",
+      "dest": "https://worksafe-backend1.onrender.com/health",
+      "methods": ["GET", "OPTIONS"]
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
   ]
 }
+

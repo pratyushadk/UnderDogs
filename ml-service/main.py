@@ -27,11 +27,11 @@ from utils.clip_classifier import load_clip_model
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load CLIP model at startup, release at shutdown."""
-    print("🔄 Loading CLIP model (openai/clip-vit-base-patch32)...")
+    print("[INFO] Loading CLIP model (openai/clip-vit-base-patch32)...")
     load_clip_model()
-    print("✅ CLIP model ready.")
+    print("[INFO] CLIP model ready.")
     yield
-    print("🛑 ML service shutting down.")
+    print("[INFO] ML service shutting down.")
 
 # ── App ──────────────────────────────────────────────────────
 app = FastAPI(

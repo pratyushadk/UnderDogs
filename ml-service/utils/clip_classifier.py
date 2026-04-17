@@ -40,7 +40,7 @@ def load_clip_model():
     """No-op for API mode — model lives on HuggingFace servers."""
     print("  [CLIP] Using HuggingFace Inference API (no local torch required)")
     if not HF_TOKEN:
-        print("  ⚠️  HUGGINGFACE_API_TOKEN not set — CLIP will use fallback scoring")
+        print("  [WARN] HUGGINGFACE_API_TOKEN not set — CLIP will use fallback scoring")
 
 
 def decode_base64_image(image_b64: str) -> bytes:
