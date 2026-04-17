@@ -10,17 +10,18 @@
 ## Table of Contents
 
 1. [How to Access the Prototype](#1-how-to-access-the-prototype)
-2. [User Journey — Step by Step](#2-user-journey--step-by-step)
+2. [Admin Portal — Underwriter & Operations View](#2-admin-portal--underwriter--operations-view)
+3. [User Journey — Step by Step](#3-user-journey--step-by-step)
    - [Step 1: Rider Identification & Profile Fetch](#step-1-rider-identification--profile-fetch)
    - [Step 2: Zone Selection & Risk Map](#step-2-zone-selection--risk-map)
    - [Step 3: Premium Review & Activation](#step-3-premium-review--activation)
    - [Step 4: Dashboard — Live Coverage Overview](#step-4-dashboard--live-coverage-overview)
    - [Step 5: Report a Disruption (Crowdsource Path)](#step-5-report-a-disruption-crowdsource-path)
-3. [Mathematical Models — Where to Find Them](#3-mathematical-models--where-to-find-them)
-4. [Fraud Prevention Architecture](#4-fraud-prevention-architecture)
-5. [API & Data Pipeline](#5-api--data-pipeline)
-6. [Prototype vs. Production — What Changes](#6-prototype-vs-production--what-changes)
-7. [Future Roadmap](#7-future-roadmap)
+4. [Mathematical Models — Where to Find Them](#4-mathematical-models--where-to-find-them)
+5. [Fraud Prevention Architecture](#5-fraud-prevention-architecture)
+6. [API & Data Pipeline](#6-api--data-pipeline)
+7. [Prototype vs. Production — What Changes](#7-prototype-vs-production--what-changes)
+8. [Future Roadmap](#8-future-roadmap)
 
 ---
 
@@ -58,7 +59,49 @@ cd frontend && npm install && npm run dev
 
 ---
 
-## 2. User Journey — Step by Step
+## 2. Admin Portal — Underwriter & Operations View
+
+WorkSafe has a dedicated **Admin Portal** for the insurance underwriter and operations team. It provides a full bird's-eye view of the entire platform — all riders, all zones, all financial activity, and all fraud events — in real time.
+
+### Access the Admin Portal
+
+| Field | Value |
+|-------|-------|
+| **URL** | [`https://worksafe-seven.vercel.app/admin/login`](https://worksafe-seven.vercel.app/admin/login) |
+| **Email** | `admin@worksafe.in` |
+| **Password** | `WorkSafe@Admin2026` |
+
+### What You Can See in the Admin Portal
+
+**Overview Dashboard:**
+- Total active policies, total riders, total claims settled, and float exposure (total premiums collected vs. total payouts disbursed).
+- Platform-wide DI status — which zones are currently disrupted.
+
+**Zone Monitor:**
+- Live Disruption Index (DI) for all 10 Bengaluru zones simultaneously, color-coded by severity.
+- Unlike the rider dashboard (which only shows the rider's own zone), admins see the full city-wide picture.
+
+**Rider Management:**
+- Full list of all registered riders with their policy status, zone, subscription streak, C_factor, and payout history.
+
+**Transaction Ledger:**
+- Complete financial record of every premium collected and every payout disbursed across all riders.
+
+**Fraud Log:**
+- Every fraud gate rejection logged with reason: Haversine velocity exceeded, Moiré pattern detected, CLIP classification failed, or duplicate report blocked.
+- Useful for auditing the integrity of submitted disruption reports.
+
+**Disruption Events:**
+- Historical log of every zone-level disruption event — DI score at trigger, number of riders affected, total payout, and settlement latency.
+
+**Crowdsource Reports:**
+- All manually submitted rider disruption reports with their gate-by-gate validation status.
+
+> **Note:** Admin authentication uses a separate JWT signed with a different secret, and all admin API routes require an `admin` role in the token payload. The admin account is pre-seeded in the database via `seed_extended.sql`.
+
+---
+
+## 3. User Journey — Step by Step
 
 ### Step 1: Rider Identification & Profile Fetch
 
