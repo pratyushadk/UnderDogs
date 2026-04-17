@@ -231,6 +231,7 @@ export default function Landing() {
   const [scrolled, setScrolled] = useState(false);
   const [zones, setZones] = useState([]);
   const [hoveredStep, setHoveredStep] = useState(null);
+  const [subscribed, setSubscribed] = useState(false);
   const { user, loading } = useAuth();
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -838,10 +839,18 @@ export default function Landing() {
               <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>Stay updated on disruptions & payouts</div>
               <div style={{ fontSize: 12.5, color: '#64748B', marginTop: 3 }}>Zone alerts and platform updates to your inbox.</div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input type="email" placeholder="Enter your email" style={{ padding: '9px 14px', borderRadius: 7, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: 13.5, outline: 'none', width: 220, fontFamily: 'inherit' }} />
-              <button style={{ padding: '9px 18px', background: '#4F46E5', color: 'white', border: 'none', borderRadius: 7, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Subscribe</button>
-            </div>
+            <form onSubmit={e => { e.preventDefault(); setSubscribed(true); }} style={{ display: 'flex', gap: 8 }}>
+              {subscribed ? (
+                <div style={{ padding: '9px 18px', background: 'rgba(5, 150, 105, 0.1)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 7, fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <CheckCircle size={15} /> Subscribed!
+                </div>
+              ) : (
+                <>
+                  <input required type="email" placeholder="Enter your email" style={{ padding: '9px 14px', borderRadius: 7, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: 13.5, outline: 'none', width: 220, fontFamily: 'inherit' }} />
+                  <button type="submit" style={{ padding: '9px 18px', background: '#4F46E5', color: 'white', border: 'none', borderRadius: 7, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Subscribe</button>
+                </>
+              )}
+            </form>
           </div>
         </div>
 
