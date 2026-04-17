@@ -16,7 +16,11 @@
 
 import { BrowserRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { Shield, LayoutDashboard, FileWarning, LogOut, Clock, Database, Bell, CreditCard, Award, FileText, ChevronDown, Menu, X } from 'lucide-react';
+import {
+  Shield, LayoutDashboard, FileWarning, LogOut, Clock,
+  Database, Bell, CreditCard, Award, FileText, Menu, X,
+  ChevronRight, Settings, User, Activity
+} from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { fetchHealth, fetchNotifications, markAllNotifsRead } from './services/api.js';
 
@@ -44,12 +48,11 @@ function RequireAuth({ children, adminOnly = false }) {
   const location = useLocation();
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-ws-bg">
       <div className="spinner w-8 h-8 border-4" />
     </div>
   );
 
-  // Not logged in — admin routes go to admin/login, others go to /login
   if (!user) {
     const isAdminRoute = location.pathname.startsWith('/admin');
     return <Navigate to={isAdminRoute ? '/admin/login' : '/login'} state={{ from: location }} replace />;
@@ -74,7 +77,6 @@ function NotifBell() {
     return () => clearInterval(id);
   }, []);
 
-  // Close on outside click
   useEffect(() => {
     const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener('mousedown', handler);
@@ -90,20 +92,18 @@ function NotifBell() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="relative btn btn-ghost btn-sm p-2"
+        className="sidebar-icon-btn relative"
         aria-label="Notifications"
       >
         <Bell className="w-5 h-5" />
         {data.unread_count > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-            {Math.min(data.unread_count, 9)}
-          </span>
+          <span className="notif-badge">{Math.min(data.unread_count, 9)}</span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 z-[200] overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+        <div className="notif-panel">
+          <div className="notif-panel-header">
             <span className="font-bold text-slate-900 text-sm">Notifications</span>
             {data.unread_count > 0 && (
               <button onClick={handleMarkAll} className="text-xs text-indigo-600 font-semibold hover:underline">
@@ -111,12 +111,12 @@ function NotifBell() {
               </button>
             )}
           </div>
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-72 overflow-y-auto">
             {data.notifications.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 text-sm">No notifications</div>
+              <div className="py-10 text-center text-slate-400 text-sm">No notifications</div>
             ) : (
               data.notifications.map(n => (
-                <div key={n.notif_id} className={`px-4 py-3 border-b border-slate-50 ${!n.is_read ? 'bg-indigo-50/50' : ''}`}>
+                <div key={n.notif_id} className={`notif-item ${!n.is_read ? 'unread' : ''}`}>
                   <div className="font-semibold text-slate-900 text-sm">{n.title}</div>
                   <div className="text-slate-500 text-xs mt-0.5 leading-relaxed">{n.body}</div>
                   <div className="text-slate-400 text-[10px] mt-1">{new Date(n.created_at).toLocaleString('en-IN')}</div>
@@ -130,10 +130,10 @@ function NotifBell() {
   );
 }
 
-// ── App Nav (for authenticated rider routes) ──────────────────
-function AppNav() {
-  const { logout } = useAuth();
-  const location   = useLocation();
+// ── Sidebar Nav ───────────────────────────────────────────────
+function Sidebar() {
+  const { user, logout } = useAuth();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isActive = (path) => location.pathname === path;
 
@@ -145,67 +145,101 @@ function AppNav() {
     { to: '/app/loyalty',   icon: Award,           label: 'Loyalty'   },
   ];
 
-  return (
-    <nav className="nav shadow-sm">
-      <div className="nav-brand">
-        <Link to="/app/dashboard" className="flex items-center gap-2">
-          <div className="nav-brand-icon"><Shield className="w-5 h-5" strokeWidth={2.5} /></div>
-          <span className="nav-brand-text">Work<span>Safe</span></span>
+  const SidebarContent = () => (
+    <div className="sidebar-inner">
+      {/* Brand */}
+      <div className="sidebar-brand">
+        <Link to="/app/dashboard" className="sidebar-brand-link" onClick={() => setMobileOpen(false)}>
+          <div className="sidebar-brand-icon">
+            <Shield className="w-5 h-5" strokeWidth={2.5} />
+          </div>
+          <span className="sidebar-brand-text">Work<span>Safe</span></span>
         </Link>
       </div>
 
-      {/* Desktop tabs */}
-      <div className="hidden sm:flex items-center gap-1 nav-tabs">
+      {/* Nav section label */}
+      <div className="sidebar-section-label">Navigation</div>
+
+      {/* Nav links */}
+      <nav className="sidebar-nav">
         {NAV_LINKS.map(l => (
           <Link
             key={l.to}
             to={l.to}
-            className={`nav-tab ${isActive(l.to) ? 'active' : ''}`}
+            className={`sidebar-link ${isActive(l.to) ? 'active' : ''}`}
+            onClick={() => setMobileOpen(false)}
           >
-            <l.icon className="w-4 h-4" />
-            {l.label}
+            <l.icon className="w-[18px] h-[18px] shrink-0" />
+            <span>{l.label}</span>
+            {isActive(l.to) && <ChevronRight className="w-4 h-4 ml-auto opacity-60" />}
           </Link>
         ))}
-      </div>
+      </nav>
 
-      <div className="flex items-center gap-2">
-        <NotifBell />
-        <button className="btn btn-ghost btn-sm hidden sm:flex" onClick={logout}>
-          <LogOut className="w-4 h-4" /> Sign Out
-        </button>
-        {/* Mobile hamburger */}
-        <button className="sm:hidden btn btn-ghost btn-sm p-2" onClick={() => setMobileOpen(o => !o)}>
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Status pill */}
+      <StatusPill />
+
+      {/* User / bottom */}
+      <div className="sidebar-footer">
+        <div className="sidebar-user">
+          <div className="sidebar-avatar">
+            <User className="w-4 h-4" />
+          </div>
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name">{user?.full_name || 'Rider'}</div>
+            <div className="sidebar-user-role">Gig Worker</div>
+          </div>
+          <NotifBell />
+        </div>
+        <button className="sidebar-logout-btn" onClick={logout}>
+          <LogOut className="w-4 h-4" />
+          <span>Sign Out</span>
         </button>
       </div>
+    </div>
+  );
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="absolute top-full left-0 right-0 bg-white border-b border-slate-100 shadow-lg sm:hidden z-50">
-          {NAV_LINKS.map(l => (
-            <Link
-              key={l.to}
-              to={l.to}
-              className={`flex items-center gap-3 px-6 py-3 text-sm font-medium ${isActive(l.to) ? 'text-indigo-600 bg-indigo-50' : 'text-slate-600'}`}
-              onClick={() => setMobileOpen(false)}
-            >
-              <l.icon className="w-4 h-4" /> {l.label}
-            </Link>
-          ))}
-          <button
-            className="flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600 w-full border-t border-slate-100"
-            onClick={logout}
-          >
-            <LogOut className="w-4 h-4" /> Sign Out
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="sidebar">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile top bar */}
+      <div className="mobile-topbar">
+        <Link to="/app/dashboard" className="flex items-center gap-2">
+          <div className="sidebar-brand-icon w-8 h-8">
+            <Shield className="w-4 h-4" strokeWidth={2.5} />
+          </div>
+          <span className="sidebar-brand-text text-base">Work<span>Safe</span></span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <NotifBell />
+          <button className="sidebar-icon-btn" onClick={() => setMobileOpen(o => !o)}>
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
+      </div>
+
+      {/* Mobile drawer */}
+      {mobileOpen && (
+        <>
+          <div className="mobile-overlay" onClick={() => setMobileOpen(false)} />
+          <aside className="sidebar mobile-open">
+            <SidebarContent />
+          </aside>
+        </>
       )}
-    </nav>
+    </>
   );
 }
 
-// ── Status Bar ────────────────────────────────────────────────
-function StatusBar() {
+// ── Status Pill (inside sidebar) ─────────────────────────────
+function StatusPill() {
   const [health, setHealth] = useState(null);
   const [now, setNow]       = useState('');
 
@@ -221,21 +255,14 @@ function StatusBar() {
 
   const alive = !!health;
   return (
-    <div className="status-bar">
-      <div className="status-bar-left">
-        <span className={`status-dot ${alive ? '' : 'offline'}`} />
-        <span className="status-label">{alive ? 'All Systems Operational' : 'Platform Offline'}</span>
-        {alive && (
-          <span className="status-meta hidden sm:flex">
-            <Database className="w-3 h-3 ml-2" /><span>{health?.database?.name || '—'}</span>
-            <span className="text-slate-300">|</span>
-            <span>DI Threshold: {health?.config?.diThreshold || '—'}</span>
-          </span>
-        )}
+    <div className="sidebar-status-pill">
+      <div className="flex items-center gap-2">
+        <span className={`status-dot-sm ${alive ? '' : 'offline'}`} />
+        <span className="text-xs font-semibold text-slate-700">
+          {alive ? 'Systems Online' : 'Offline'}
+        </span>
       </div>
-      <span className="status-time flex items-center gap-2">
-        <Clock className="w-3 h-3" /> {now} IST
-      </span>
+      <span className="text-[11px] text-slate-400 font-mono">{now} IST</span>
     </div>
   );
 }
@@ -243,11 +270,12 @@ function StatusBar() {
 // ── App Shell (authenticated rider area) ─────────────────────
 function AppShell({ children }) {
   return (
-    <>
-      <StatusBar />
-      <AppNav />
-      <div className="page-shell">{children}</div>
-    </>
+    <div className="app-shell">
+      <Sidebar />
+      <main className="app-main">
+        {children}
+      </main>
+    </div>
   );
 }
 
