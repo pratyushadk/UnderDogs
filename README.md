@@ -5,7 +5,6 @@
 > | Document | Description |
 > |----------|-------------|
 > | **[Try It Out](Tryitout.md)** | **Start here** — Step-by-step guide to explore the live prototype, test demo riders, and understand every feature with code references |
-> | **[Progress Tracker](Progress.md)** | What we've built so far and what we're targeting next |
 > | **[Product Requirements (PRD)](PRD.md)** | Business logic, user journeys, mathematical models, and product vision |
 > | **[Software Requirements (SRS)](SRS.md)** | Full technical specification with requirement traceability, API contracts, and architecture details |
 
