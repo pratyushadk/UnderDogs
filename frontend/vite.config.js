@@ -16,6 +16,21 @@ export default defineConfig({
         target: 'http://localhost:4000',
         changeOrigin: true,
       },
+      '/auth': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+      '/admin': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        // Only proxy API calls (axios/JSON) — let browser navigations fall through to React
+        bypass(req) {
+          const accept = req.headers['accept'] || '';
+          if (accept.includes('text/html')) {
+            return '/index.html'; // serve SPA for page navigation
+          }
+        },
+      },
     },
   },
 })

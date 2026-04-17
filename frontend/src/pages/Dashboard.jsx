@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchDashboard, fetchClaims, fetchPolicyStatus, fetchZones } from '../services/api.js';
 import ZoneMap from '../components/ZoneMap.jsx';
-import { LayoutDashboard, Map as MapIcon, CreditCard, ChevronRight, Activity, Zap, TrendingUp, ShieldCheck, Download, AlertTriangle, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, Map as MapIcon, CreditCard, ChevronRight, Activity, Zap, TrendingUp, ShieldCheck, Download, AlertTriangle, CheckCircle, MapPin } from 'lucide-react';
 
 const DI_CLASS = di => di > 75 ? 'di-disrupted' : di > 50 ? 'di-high' : di > 25 ? 'di-moderate' : 'di-safe';
 const DI_LABEL = di => di > 75 ? 'Disrupted' : di > 50 ? 'High' : di > 25 ? 'Moderate' : 'Safe';
@@ -18,7 +18,7 @@ function fmtDt(iso) {
   });
 }
 
-export default function Dashboard({ jwt }) {
+export default function Dashboard() {
   const [tab,    setTab]    = useState('overview');
   const [policy, setPolicy] = useState(null);
   const [stats,  setStats]  = useState(null);
@@ -53,7 +53,9 @@ export default function Dashboard({ jwt }) {
   const totalPaid = settled.reduce((s, c) => s + Number(c.payout_amount || 0), 0);
   const streak = policy?.subscription_streak ?? 0;
 
-  const disrupted = zones.filter(z => (z.current_di ?? 0) > 75);
+  // Only alert on the user's OWN registered zone — not all zones
+  const myZone = zones.find(z => z.zone_id === policy?.zone_id);
+  const myZoneDisrupted = myZone && (myZone.current_di ?? 0) > 75;
 
   if (loading) {
     return (
@@ -81,30 +83,30 @@ export default function Dashboard({ jwt }) {
         </p>
       </div>
 
-      {/* ── Disruption Banner ── */}
-      {disrupted.map(z => (
-        <div key={z.zone_id} className="disruption-banner mb-8 animate-slide-up shadow-lg">
+      {/* ── Disruption Banner — only for user's own zone ── */}
+      {myZoneDisrupted && (
+        <div className="disruption-banner mb-8 animate-slide-up shadow-lg">
           <div className="flex items-start gap-4">
             <div className="bg-red-100 p-2 rounded-full mt-1">
               <AlertTriangle className="w-6 h-6 text-red-500" />
             </div>
             <div>
               <div className="disruption-banner-text">
-                <h4>Active Disruption · {z.zone_id.replace('Zone_', '').replace(/_/g, ' ')}</h4>
+                <h4>Active Disruption · {myZone.zone_id.replace('Zone_', '').replace(/_/g, ' ')}</h4>
               </div>
               <p className="text-red-500 font-medium">
-                Auto-settlement pipeline triggered for this zone due to extreme conditions.
+                Auto-settlement pipeline triggered for your zone due to extreme conditions.
               </p>
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
             <span className="text-xs font-bold text-red-400 uppercase tracking-widest">DI Score</span>
-            <span className={`di-badge di-disrupted text-lg px-4 py-1.5 shadow-sm`}>
-              {Math.round(z.current_di)}
+            <span className="di-badge di-disrupted text-lg px-4 py-1.5 shadow-sm">
+              {Math.round(myZone.current_di)}
             </span>
           </div>
         </div>
-      ))}
+      )}
 
       {/* ── Tab Group ── */}
       <div className="tab-group flex w-full sm:w-auto overflow-x-auto custom-scrollbar shadow-sm">
@@ -220,28 +222,51 @@ export default function Dashboard({ jwt }) {
             <ZoneMap zones={zones} height={500} />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {zones.map(z => {
-              const di = z.current_di ?? 0;
-              return (
-                <div key={z.zone_id} className="card card-sm bg-white hover:border-brand-300 transition">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm font-bold text-slate-900 truncate pr-2">
-                      {z.zone_id.replace('Zone_', '').replace(/_/g, ' ')}
-                    </span>
-                    <span className={`di-badge shrink-0 ${DI_CLASS(di)}`}>{Math.round(di)}</span>
+          {/* Show ONLY the user's registered zone */}
+          {(() => {
+            const userZone = zones.find(z => z.zone_id === policy?.zone_id);
+            if (!userZone) return (
+              <div className="card text-center py-10 text-slate-400">
+                <MapIcon className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                <p className="text-sm font-medium">Complete onboarding to see your zone data.</p>
+              </div>
+            );
+            const di = userZone.current_di ?? 0;
+            return (
+              <div className="card shadow-md border-t-4 border-t-brand-500">
+                <div className="flex items-center gap-2 mb-6">
+                  <MapPin className="w-5 h-5 text-brand-500" />
+                  <h3 className="text-base font-bold text-slate-900">Your Zone — {userZone.zone_id.replace('Zone_', '').replace(/_/g, ' ')}</h3>
+                  <span className="ml-auto text-xs font-semibold text-slate-400 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg">Primary Delivery Area</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 text-center">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Disruption Index</div>
+                    <span className={`di-badge text-2xl px-5 py-2 ${DI_CLASS(di)}`}>{Math.round(di)}</span>
+                    <div className="mt-3">
+                      <div className="di-progress mt-2">
+                        <div className={`di-progress-fill ${DI_CLASS(di)}`} style={{ width: `${Math.min(di, 100)}%` }} />
+                      </div>
+                    </div>
                   </div>
-                  <div className="di-progress">
-                    <div className={`di-progress-fill ${DI_CLASS(di)}`} style={{ width: `${Math.min(di, 100)}%` }} />
+                  <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 text-center">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Status</div>
+                    <div className={`text-2xl font-extrabold mt-2 ${di > 75 ? 'text-rose-600' : di > 50 ? 'text-orange-500' : di > 25 ? 'text-amber-500' : 'text-emerald-600'}`}>
+                      {DI_LABEL(di)}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2 font-medium">
+                      {di > 75 ? 'Auto-settlement triggered' : di > 25 ? 'Monitor conditions' : 'Normal operations'}
+                    </p>
                   </div>
-                  <div className="flex justify-between items-center mt-3 text-xs">
-                    <span className="font-semibold text-slate-600">{DI_LABEL(di)}</span>
-                    <span className="text-slate-400">Risk ×{z.risk_multiplier ?? '1.00'}</span>
+                  <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 text-center">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Risk Multiplier</div>
+                    <div className="text-2xl font-extrabold text-slate-900 mt-2">×{userZone.risk_multiplier ?? '1.00'}</div>
+                    <p className="text-xs text-slate-400 mt-2 font-medium">Applied to your premium</p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 

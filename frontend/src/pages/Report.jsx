@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { submitReport, fetchPolicyStatus } from '../services/api.js';
-import { Fingerprint, Activity, Cpu, Users, MapPin, Camera, RefreshCw, Send, AlertTriangle, CheckCircle, ChevronLeft, ShieldAlert } from 'lucide-react';
+import { Fingerprint, Activity, Cpu, Users, MapPin, Camera, RefreshCw, Send, AlertTriangle, CheckCircle, ChevronLeft, ShieldAlert, ArrowRight } from 'lucide-react';
 
 const GATES = [
   {
@@ -26,19 +27,24 @@ const GATES = [
 ];
 
 export default function Report({ jwt, onBack }) {
+  const navigate = useNavigate();
   const [policy,   setPolicy]   = useState(null);
+  const [policyLoading, setPolicyLoading] = useState(true);
   const [geoData,  setGeoData]  = useState(null);
   const [geoErr,   setGeoErr]   = useState('');
   const [imgB64,   setImgB64]   = useState('');
   const [stream,   setStream]   = useState(null);
-  const [step,     setStep]     = useState('idle'); // idle | locating | camera | reviewing | submitting | done | error
+  const [step,     setStep]     = useState('idle');
   const [result,   setResult]   = useState(null);
   const [gateStatus, setGateStatus] = useState({});
   const videoRef  = useRef(null);
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    fetchPolicyStatus().then(r => setPolicy(r.data)).catch(() => {});
+    fetchPolicyStatus()
+      .then(r => setPolicy(r.data))
+      .catch(() => {})
+      .finally(() => setPolicyLoading(false));
     return () => { if (stream) stream.getTracks().forEach(t => t.stop()); };
   }, []);
 
@@ -108,14 +114,23 @@ export default function Report({ jwt, onBack }) {
       setResult({ success: true, data: res.data });
       setStep('done');
     } catch (e) {
-      const err = e.response?.data;
+      const err    = e.response?.data;
+      const code   = err?.error;
+
+      // Onboarding not complete — show friendly redirect
+      if (code === 'ONBOARDING_REQUIRED' || e.response?.status === 403) {
+        setResult({ success: false, error: 'ONBOARDING_REQUIRED' });
+        setStep('error');
+        return;
+      }
+
       const failGate = err?.gate_failed === 'DUPLICATE'  ? 'duplicate'
                      : err?.gate_failed === 'VELOCITY'   ? 'velocity'
                      : err?.gate_failed === 'AI_VISION'  ? 'ai'
                      : err?.gate_failed === 'THRESHOLD'  ? 'threshold'
                      : 'ai';
       setGateStatus(g => ({ ...g, [failGate]: 'failed' }));
-      setResult({ success: false, error: err?.error || 'Submission failed during verification.' });
+      setResult({ success: false, error: err?.message || err?.error || 'Submission failed during verification.' });
       setStep('error');
     }
   };
@@ -225,17 +240,35 @@ export default function Report({ jwt, onBack }) {
 
       {/* ── Error Result ── */}
       {step === 'error' && result && (
-        <div className="bg-rose-50 border-l-4 border-rose-500 p-6 rounded-r-xl shadow-md mb-8">
-          <div className="flex gap-4">
-            <AlertTriangle className="text-rose-600 w-6 h-6 shrink-0" />
-            <div>
-              <h3 className="text-lg font-bold text-rose-900 mb-1">Verification Failed</h3>
-              <p className="text-rose-700 text-sm font-medium leading-relaxed">
-                {result.error}
-              </p>
+        result.error === 'ONBOARDING_REQUIRED' ? (
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-6 rounded-r-xl shadow-md mb-8">
+            <div className="flex gap-4">
+              <ShieldAlert className="text-amber-600 w-6 h-6 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-amber-900 mb-1">Onboarding Required</h3>
+                <p className="text-amber-700 text-sm font-medium leading-relaxed mb-4">
+                  You must complete onboarding and activate a policy before you can submit disruption reports.
+                </p>
+                <button
+                  onClick={() => navigate('/app/onboard')}
+                  className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition shadow"
+                >
+                  Complete Onboarding <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-rose-50 border-l-4 border-rose-500 p-6 rounded-r-xl shadow-md mb-8">
+            <div className="flex gap-4">
+              <AlertTriangle className="text-rose-600 w-6 h-6 shrink-0" />
+              <div>
+                <h3 className="text-lg font-bold text-rose-900 mb-1">Verification Failed</h3>
+                <p className="text-rose-700 text-sm font-medium leading-relaxed">{result.error}</p>
+              </div>
+            </div>
+          </div>
+        )
       )}
 
       {/* ── Camera Area ── */}

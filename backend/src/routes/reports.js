@@ -27,6 +27,15 @@ router.post('/submit', authenticate, async (req, res) => {
   const { latitude, longitude, image_b64, timestamp_unix } = req.body;
   const riderId = req.rider.rider_id;
   const zoneId  = req.rider.zone_id;
+
+  // Guard: user must have completed onboarding to submit reports
+  if (!riderId) {
+    return res.status(403).json({
+      error: 'ONBOARDING_REQUIRED',
+      message: 'Please complete onboarding and activate a policy before submitting reports.',
+    });
+  }
+
   const ts2 = timestamp_unix || Math.floor(Date.now() / 1000);
 
   if (!latitude || !longitude || !image_b64) {

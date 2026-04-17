@@ -21,15 +21,22 @@ const { connectDB } = require('./config/db');
 const { validateEnv } = require('./config/validateEnv');
 
 // ── Routes ────────────────────────────────────────────────────
-const onboardingRouter = require('./routes/onboarding');
-const reportsRouter    = require('./routes/reports');
-const claimsRouter     = require('./routes/claims');
-const zonesRouter      = require('./routes/zones');
-const healthRouter     = require('./routes/health');
+const onboardingRouter    = require('./routes/onboarding');
+const reportsRouter       = require('./routes/reports');
+const claimsRouter        = require('./routes/claims');
+const zonesRouter         = require('./routes/zones');
+const healthRouter        = require('./routes/health');
+// ── New v2 Routes ─────────────────────────────────────────────
+const authRouter          = require('./routes/auth');
+const paymentsRouter      = require('./routes/payments');
+const notificationsRouter = require('./routes/notifications');
+const adminRouter         = require('./routes/admin');
 
 // ── Cron Jobs ─────────────────────────────────────────────────
 const { startPremiumJob }  = require('./cron/premiumJob');
 const { startPollingJob }  = require('./cron/pollingJob');
+// ── Email Service ─────────────────────────────────────────────
+const { verifyEmailConfig } = require('./services/emailService');
 
 // ─────────────────────────────────────────────────────────────
 // STARTUP
@@ -40,6 +47,9 @@ async function bootstrap() {
 
   // 2. Connect to PostgreSQL (fails fast if DB is unreachable)
   await connectDB();
+
+  // 2b. Verify email config (non-blocking warning only)
+  verifyEmailConfig();
 
   const app = express();
 
@@ -56,12 +66,17 @@ async function bootstrap() {
     });
   }
 
-  // 5. Mount routes
+  // 5. Mount routes — existing (unchanged)
   app.use('/health',         healthRouter);
   app.use('/api/onboarding', onboardingRouter);
   app.use('/api/reports',    reportsRouter);
   app.use('/api/claims',     claimsRouter);
   app.use('/api/zones',      zonesRouter);
+  // v2 routes
+  app.use('/auth',                  authRouter);
+  app.use('/api/payments',          paymentsRouter);
+  app.use('/api/notifications',     notificationsRouter);
+  app.use('/admin',                 adminRouter);
 
   // 6. 404 handler
   app.use((_req, res) => {

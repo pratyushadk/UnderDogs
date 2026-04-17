@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Shield, UserCheck, MapPin, CheckCircle, ChevronRight, Search, Activity, Zap, Star } from 'lucide-react';
-import { fetchProfile, submitOnboarding, fetchZones } from '../services/api.js';
+import { useNavigate } from 'react-router-dom';
+import { Shield, UserCheck, MapPin, CheckCircle, ChevronRight, Search, Activity, Zap, Star, CreditCard, Loader } from 'lucide-react';
+import { fetchProfile, submitOnboarding, fetchZones, createPaymentOrder, verifyPayment } from '../services/api.js';
 import ZoneMap from '../components/ZoneMap.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const PLATFORM_COLOR = {
   Zomato: 'text-red-500 bg-red-50 border-red-100',
@@ -16,7 +18,9 @@ const DEMO_IDS = [
   'BLINKIT_RIDER_001', 'SWIGGY_DEMO_RIDER_002', 'PORTER_RIDER_001',
 ];
 
-export default function Onboarding({ onActivated }) {
+export default function Onboarding() {
+  const navigate  = useNavigate();
+  const { user }  = useAuth();
   const [step, setStep] = useState(1);
   const [riderId, setRiderId] = useState('');
   const [profile, setProfile] = useState(null);
@@ -26,6 +30,9 @@ export default function Onboarding({ onActivated }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activating, setActivating] = useState(false);
+  // Payment step state
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [onboardedRider, setOnboardedRider] = useState(null);
 
   const handleFetch = async () => {
     if (!riderId.trim()) return setError('Please enter your Rider ID.');
@@ -42,6 +49,7 @@ export default function Onboarding({ onActivated }) {
     } finally { setLoading(false); }
   };
 
+  // Step 3: submit onboarding (creates rider + policy), then go to payment step
   const handleActivate = async () => {
     if (!selectedZ) return setError('Please select a zone.');
     if (!consent) return setError('Please accept the coverage terms.');
@@ -52,10 +60,53 @@ export default function Onboarding({ onActivated }) {
         zone_id: selectedZ,
         consent: true,
       });
-      onActivated(res.data.token);
+      setOnboardedRider(res.data);
+      setStep(4); // go to payment step
     } catch (e) {
       setError(e.response?.data?.error || 'Activation failed. Please try again.');
     } finally { setActivating(false); }
+  };
+
+  // Step 4: launch Razorpay checkout
+  const handlePayment = async () => {
+    setPaymentLoading(true); setError('');
+    try {
+      const orderRes = await createPaymentOrder({});
+      const { order_id, amount, currency, key_id, txn_id, prefill } = orderRes.data;
+
+      const options = {
+        key:      key_id,
+        amount,
+        currency,
+        name:     'WorkSafe',
+        description: 'Weekly Income Protection Premium',
+        order_id,
+        prefill:  { name: user?.name || '', email: prefill?.email || '' },
+        theme:    { color: '#4F46E5' },
+        handler: async (response) => {
+          try {
+            await verifyPayment({
+              txn_id,
+              razorpay_order_id:   response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature:  response.razorpay_signature,
+            });
+            navigate('/app/dashboard');
+          } catch {
+            setError('Payment verified but policy activation failed. Contact support.');
+          }
+        },
+        modal: {
+          ondismiss: () => setPaymentLoading(false),
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (e) {
+      setError(e.response?.data?.error || 'Could not initiate payment.');
+      setPaymentLoading(false);
+    }
   };
 
   const p = profile;
@@ -87,14 +138,15 @@ export default function Onboarding({ onActivated }) {
         {[
           { id: 1, label: 'Identity', icon: UserCheck },
           { id: 2, label: 'Zone', icon: MapPin },
-          { id: 3, label: 'Activate', icon: Shield },
+          { id: 3, label: 'Review', icon: Shield },
+          { id: 4, label: 'Pay', icon: CreditCard },
         ].map((s, idx) => (
           <div key={s.id} className="flex items-center">
             <div className={`p-3 rounded-xl transition-all duration-500 font-semibold text-sm flex items-center gap-2 ${step === s.id ? 'bg-brand-500 text-white shadow-md' : step > s.id ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>
               <s.icon className="w-4 h-4" strokeWidth={step === s.id ? 3 : 2} />
               <span className={step !== s.id ? 'hidden sm:block' : 'block'}>{s.label}</span>
             </div>
-            {idx < 2 && <div className={`w-6 h-0.5 mx-2 rounded-full transition-colors duration-500 ${step > idx + 1 ? 'bg-emerald-200' : 'bg-slate-200'}`} />}
+            {idx < 3 && <div className={`w-6 h-0.5 mx-2 rounded-full transition-colors duration-500 ${step > idx + 1 ? 'bg-emerald-200' : 'bg-slate-200'}`} />}
           </div>
         ))}
       </nav>
@@ -207,18 +259,11 @@ export default function Onboarding({ onActivated }) {
             <div className="h-[300px] w-full relative bg-slate-50">
               <ZoneMap zones={zones} selectedZone={selectedZ} onZoneSelect={setSelectedZ} height={300} />
               
-              <div className="absolute bottom-4 left-4 right-4 z-[400] bg-white/90 backdrop-blur-sm p-4 rounded-xl border border-slate-200 shadow-lg flex items-center justify-between">
+              <div className="absolute bottom-4 left-4 right-4 z-[400] bg-white/90 backdrop-blur-sm p-4 rounded-xl border border-slate-200 shadow-lg flex items-center">
                 <span className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-brand-500" />
-                  {selectedZ ? selectedZ.replace('Zone_', '').replace(/_/g, ' ') : 'Select a zone...'}
+                  {selectedZ ? selectedZ.replace('Zone_', '').replace(/_/g, ' ') : 'Select a zone on the map or list below...'}
                 </span>
-                <div className="flex gap-2">
-                  {zones.filter(z => z.zone_id === selectedZ).map(z => (
-                    <span key="di" className={`px-3 py-1.5 rounded-lg text-xs font-bold border shadow-sm ${z.current_di > 75 ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                      DI {Math.round(z.current_di)}
-                    </span>
-                  ))}
-                </div>
               </div>
             </div>
             
@@ -227,14 +272,11 @@ export default function Onboarding({ onActivated }) {
                 const isSelected = selectedZ === z.zone_id;
                 return (
                   <button key={z.zone_id}
-                    className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all text-left bg-white ${isSelected ? 'border-brand-500 shadow-md ring-2 ring-brand-100' : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:shadow-sm'}`}
+                    className={`flex items-center p-3 rounded-xl border-2 transition-all text-left bg-white ${isSelected ? 'border-brand-500 shadow-md ring-2 ring-brand-100' : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:shadow-sm'}`}
                     onClick={() => setSelectedZ(z.zone_id)}>
-                    <span className={`text-sm font-bold truncate mr-2 ${isSelected ? 'text-brand-700' : 'text-slate-700'}`}>
+                    <span className={`text-sm font-bold truncate ${isSelected ? 'text-brand-700' : 'text-slate-700'}`}>
                       {z.zone_id.replace('Zone_', '').replace(/_/g, ' ')}
                     </span>
-                    {z.current_di > 0 && (
-                      <div className={`w-2 h-2 rounded-full shrink-0 ${z.current_di > 75 ? 'bg-rose-500' : z.current_di > 25 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                    )}
                   </button>
                 )
               })}
@@ -304,8 +346,68 @@ export default function Onboarding({ onActivated }) {
             <button className="btn-premium-primary flex-[2] py-4 text-lg relative overflow-hidden shadow-lg"
               onClick={handleActivate} disabled={activating || !consent}>
               <div className="flex items-center justify-center gap-2">
-                {activating ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Confirm & Activate'}
+                {activating ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Confirm & Continue'}
               </div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════ STEP 4 — PAYMENT ════════════════════ */}
+      {step === 4 && (
+        <div className="animate-slide-up space-y-6">
+          <div className="card shadow-lg p-8 space-y-6 border-t-8 border-t-indigo-500 max-w-xl mx-auto">
+            <div className="text-center">
+              <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <CreditCard className="w-7 h-7 text-indigo-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Activate Protection</h2>
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Pay your first weekly premium to start your income protection. Payments are processed securely via Razorpay.
+              </p>
+            </div>
+
+            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500 font-medium">Coverage Zone</span>
+                <span className="font-bold text-slate-900">{selectedZ?.replace('Zone_', '').replace(/_/g, ' ')}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500 font-medium">Rider ID</span>
+                <span className="font-mono font-bold text-slate-900 text-xs">{riderId}</span>
+              </div>
+              <div className="flex justify-between text-sm border-t border-slate-200 pt-3 mt-3">
+                <span className="text-slate-700 font-bold">Weekly Premium</span>
+                <span className="font-extrabold text-indigo-600 text-lg">Calculated on checkout</span>
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm">{error}</div>
+            )}
+
+            <button
+              className="btn-premium-primary py-4 text-lg shadow-lg"
+              onClick={handlePayment}
+              disabled={paymentLoading}
+            >
+              <div className="flex items-center justify-center gap-2">
+                {paymentLoading
+                  ? <><Loader className="w-5 h-5 animate-spin" /> Opening checkout…</>
+                  : <><CreditCard className="w-5 h-5" /> Pay & Activate Protection</>
+                }
+              </div>
+            </button>
+
+            <p className="text-xs text-center text-slate-400">
+              Secured by Razorpay · ₹100 crore trust mark · PCI DSS compliant
+            </p>
+
+            <button
+              className="w-full text-sm text-slate-400 hover:text-slate-600 font-medium underline"
+              onClick={() => navigate('/app/dashboard')}
+            >
+              Skip for now (demo mode)
             </button>
           </div>
         </div>

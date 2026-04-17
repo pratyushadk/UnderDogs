@@ -7,6 +7,7 @@
 const { getRidersInZone } = require('../services/postgisService');
 const { computePayout, computeHoursLost } = require('../models/payoutCalc');
 const { disbursePayout } = require('../services/razorpayService');
+const { createNotification, getUserIdForRider } = require('../services/notificationService');
 const { query } = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 
@@ -84,7 +85,7 @@ async function triggerSettlement(zoneId, diScore, triggerType) {
         narration: `WorkSafe Payout — ${zoneId}`,
       });
 
-      // 7. Update claim status (SRS FR-5.5)
+      // 7. Update claim status + notify (SRS FR-5.5)
       if (success) {
         await query(
           `UPDATE claims SET status = 'SETTLED', razorpay_txn_id = $1, settled_at = NOW()
@@ -92,6 +93,15 @@ async function triggerSettlement(zoneId, diScore, triggerType) {
           [razorpayTxnId, claimId]
         );
         console.log(`  ✅ Settled claim ${claimId} — txn: ${razorpayTxnId}`);
+        // Fire notification to rider's user account (if linked)
+        const userId = await getUserIdForRider(rider.rider_id);
+        await createNotification(
+          userId,
+          'PAYOUT_TRIGGERED',
+          '💰 Income Payout Received',
+          `WorkSafe has automatically transferred ₹${payoutINR} to your account for disruption in ${zoneId}.`,
+          { zone_id: zoneId, payout_amount: payoutINR, claim_id: claimId, razorpay_txn_id: razorpayTxnId }
+        );
       } else {
         await query(
           `UPDATE claims SET status = 'FAILED' WHERE claim_id = $1`,

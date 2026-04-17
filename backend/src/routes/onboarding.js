@@ -15,6 +15,7 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { query } = require('../config/db');
 const { authenticate } = require('../middleware/auth');
+const { authenticateUser } = require('../middleware/authUser');
 const { getZoneForCoordinate, upsertActiveSession } = require('../services/postgisService');
 
 // ─────────────────────────────────────────────────────────────
@@ -52,10 +53,10 @@ router.get('/profile', async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────
 // POST /api/onboarding/subscribe
-// Creates rider + policy + issues JWT (FR-1.5)
+// Creates rider + policy + issues legacy fallback token (FR-1.5)
 // Body: { platform_rider_id, e_avg, shift_pattern, zone_id, manual_baseline? }
 // ─────────────────────────────────────────────────────────────
-router.post('/subscribe', async (req, res) => {
+router.post('/subscribe', authenticateUser, async (req, res) => {
   const {
     platform_rider_id,
     e_avg,
@@ -63,6 +64,8 @@ router.post('/subscribe', async (req, res) => {
     zone_id,
     manual_baseline = false,
   } = req.body;
+
+  const userId = req.user.user_id;
 
   if (!platform_rider_id || !zone_id) {
     return res.status(400).json({ error: 'Missing required fields: platform_rider_id, zone_id' });
@@ -99,15 +102,16 @@ router.post('/subscribe', async (req, res) => {
       return res.status(400).json({ error: 'Could not determine e_avg for this rider.' });
     }
 
-    // Upsert rider
+    // Upsert rider AND link to the current authenticated user_id
     const riderResult = await query(
-      `INSERT INTO riders (platform_rider_id, e_avg, shift_pattern, manual_baseline)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO riders (platform_rider_id, e_avg, shift_pattern, manual_baseline, user_id)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (platform_rider_id) DO UPDATE SET
          e_avg = EXCLUDED.e_avg,
-         shift_pattern = EXCLUDED.shift_pattern
+         shift_pattern = EXCLUDED.shift_pattern,
+         user_id = EXCLUDED.user_id
        RETURNING rider_id`,
-      [platform_rider_id, finalEavg, JSON.stringify(finalShift || { start: '09:00', end: '21:00' }), manual_baseline]
+      [platform_rider_id, finalEavg, JSON.stringify(finalShift || { start: '09:00', end: '21:00' }), manual_baseline, userId]
     );
     const riderId = riderResult.rows[0].rider_id;
 

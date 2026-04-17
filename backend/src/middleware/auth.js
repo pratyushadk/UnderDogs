@@ -21,8 +21,33 @@ function authenticate(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.rider = decoded; // { rider_id, platform_rider_id, iat, exp }
-    next();
+    req.rider = { ...decoded };
+
+    // New-style user JWT: needs rider_id looked up from DB
+    if (decoded.user_id && !decoded.rider_id) {
+      const { query } = require('../config/db');
+      (async () => {
+        try {
+          const resDB = await query(
+            `SELECT r.rider_id, p.zone_id
+             FROM riders r
+             LEFT JOIN policies p ON p.rider_id = r.rider_id AND p.status = 'ACTIVE'
+             WHERE r.user_id = $1
+             LIMIT 1`,
+            [decoded.user_id]
+          );
+          if (resDB.rows.length) {
+            req.rider.rider_id = resDB.rows[0].rider_id;
+            req.rider.zone_id  = resDB.rows[0].zone_id;
+          }
+          next();
+        } catch (e) {
+          next(e);
+        }
+      })();
+    } else {
+      next();
+    }
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expired' });
