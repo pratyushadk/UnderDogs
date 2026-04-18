@@ -278,6 +278,15 @@ export default function Landing() {
         @keyframes blink {
           0%,100% { opacity:1; } 50% { opacity:0; }
         }
+        @keyframes kenBurns {
+          0% { transform: scale(1) translate(0, 0); }
+          50% { transform: scale(1.1) translate(-1%, 2%); }
+          100% { transform: scale(1.15) translate(1%, -1%); }
+        }
+        @keyframes rainAnim {
+          0% { background-position: 0 0; }
+          100% { background-position: -200px 1000px; }
+        }
         .hero-glow {
           position:absolute; border-radius:50%; filter:blur(80px); pointer-events:none;
         }
@@ -385,114 +394,85 @@ export default function Landing() {
       {/* ══ HERO ═════════════════════════════════════════════════ */}
       <section style={{
         paddingTop: 68, minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 55%, #0F172A 100%)',
         display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden',
       }}>
-        {/* Grid bg */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(79,70,229,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(79,70,229,0.06) 1px,transparent 1px)', backgroundSize: '56px 56px' }} />
-        {/* Glows */}
-        <div className="hero-glow" style={{ top: '10%', left: '20%', width: 500, height: 500, background: 'rgba(79,70,229,0.18)' }} />
-        <div className="hero-glow" style={{ bottom: '5%', right: '10%', width: 360, height: 360, background: 'rgba(99,102,241,0.12)' }} />
+        {/* Animated Moving background 'video' effect */}
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 0,
+          backgroundImage: 'url(/biker-bg.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          animation: 'kenBurns 25s ease-in-out infinite alternate',
+        }} />
+        {/* Dark cinematic overlay */}
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 0,
+          background: 'linear-gradient(135deg, rgba(15,23,42,0.85) 0%, rgba(30,27,75,0.65) 50%, rgba(15,23,42,0.9) 100%)',
+        }} />
+        {/* CSS Rain overlay */}
+        <div style={{ 
+          position: 'absolute', inset: 0, zIndex: 0, opacity: 0.15, pointerEvents: 'none', 
+          background: 'url(https://assets.codepen.io/3364143/rain-1.png)', 
+          animation: 'rainAnim 0.3s linear infinite', mixBlendMode: 'screen' 
+        }} />
 
-        <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1, width: '100%', padding: '80px 32px' }} className="lnd-hero-grid lnd-section-inner">
-          <div className="lnd-hero-content">
+        {/* Grid bg */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: 'linear-gradient(rgba(79,70,229,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(79,70,229,0.06) 1px,transparent 1px)', backgroundSize: '56px 56px' }} />
+
+        <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1, width: '100%', padding: '80px 32px', display: 'flex', justifyContent: 'center' }} className="lnd-section-inner">
+          <div className="lnd-hero-content" style={{ textAlign: 'center', maxWidth: 840, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div className="lnd-hero-badge" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: 'rgba(79,70,229,0.2)', border: '1px solid rgba(99,102,241,0.4)',
-              color: '#A5B4FC', padding: '5px 14px', borderRadius: 20,
-              fontSize: 11, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase',
-              marginBottom: 28, animation: 'fadeSlideIn 0.6s ease-out',
+              background: 'rgba(79,70,229,0.3)', border: '1px solid rgba(99,102,241,0.5)',
+              color: '#C7D2FE', padding: '6px 16px', borderRadius: 20,
+              fontSize: 12, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase',
+              marginBottom: 32, animation: 'fadeSlideIn 0.6s ease-out',
             }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', animation: 'pulse-dot 1.5s infinite' }} />
               Live in Bengaluru · Parametric Insurance
             </div>
 
             <h1 style={{
-              fontSize: 'clamp(32px, 4.5vw, 58px)', fontWeight: 900,
-              color: 'white', letterSpacing: '-1.5px', lineHeight: 1.1, marginBottom: 22,
+              fontSize: 'clamp(36px, 5.5vw, 68px)', fontWeight: 900,
+              color: 'white', letterSpacing: '-1.5px', lineHeight: 1.1, marginBottom: 24,
               animation: 'fadeSlideIn 0.7s ease-out 0.15s both',
+              textShadow: '0 4px 20px rgba(0,0,0,0.5)'
             }}>
-              Your income<br />
-              deserves<br />
+              Your income deserves
+              <br />
               <span style={{ color: '#818CF8' }}>protection too.</span>
             </h1>
 
-            <p style={{ fontSize: 16, color: '#94A3B8', lineHeight: 1.75, marginBottom: 36, animation: 'fadeSlideIn 0.7s ease-out 0.25s both' }}>
+            <p style={{ fontSize: 18, color: '#E2E8F0', lineHeight: 1.75, marginBottom: 40, animation: 'fadeSlideIn 0.7s ease-out 0.25s both', maxWidth: 640 }}>
               WorkSafe monitors disruptions in your delivery zone 24 / 7.
-              When your shift gets wiped — <strong style={{ color: '#C7D2FE' }}>we transfer your lost income automatically.</strong> Zero forms. Zero waiting.
+              When your shift gets wiped — <strong style={{ color: '#fff' }}>we transfer your lost income automatically.</strong> Zero forms. Zero waiting.
             </p>
 
-            <div className="lnd-hero-btns" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', animation: 'fadeSlideIn 0.7s ease-out 0.35s both' }}>
+            <div className="lnd-hero-btns" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center', animation: 'fadeSlideIn 0.7s ease-out 0.35s both' }}>
               <Link to="/signup" style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: '#4F46E5', color: 'white', padding: '13px 26px',
-                borderRadius: 10, fontSize: 15, fontWeight: 700, textDecoration: 'none',
-                boxShadow: '0 4px 20px rgba(79,70,229,0.45)',
+                background: '#4F46E5', color: 'white', padding: '16px 36px',
+                borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none',
+                boxShadow: '0 8px 30px rgba(79,70,229,0.5)', transition: 'all 0.2s',
               }}>
-                Get Protected Today <ArrowRight size={16} />
+                Get Protected Today <ArrowRight size={18} />
               </Link>
               <a href="#how" style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-                color: 'white', padding: '13px 26px', borderRadius: 10,
-                fontSize: 15, fontWeight: 600, textDecoration: 'none',
+                background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                color: 'white', padding: '16px 36px', borderRadius: 12,
+                fontSize: 16, fontWeight: 600, textDecoration: 'none', backdropFilter: 'blur(10px)'
               }}>
                 See How It Works
               </a>
             </div>
 
-            <div className="lnd-hero-trust" style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 32, flexWrap: 'wrap', animation: 'fadeSlideIn 0.7s ease-out 0.45s both' }}>
+            <div className="lnd-hero-trust" style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: 42, flexWrap: 'wrap', justifyContent: 'center', animation: 'fadeSlideIn 0.7s ease-out 0.45s both' }}>
               {['Zero paperwork', 'Automatic payouts', 'Cancel anytime'].map(t => (
-                <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748B', fontSize: 13 }}>
-                  <CheckCircle size={13} color="#6366F1" /> {t}
+                <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#CBD5E1', fontSize: 14 }}>
+                  <CheckCircle size={15} color="#818CF8" /> {t}
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* Hero right — real Bengaluru zone map */}
-          <div style={{ display: 'flex', justifyContent: 'center' }} className="lnd-hero-right">
-            <div style={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-              {/* Map frame */}
-              <div style={{
-                borderRadius: 16, overflow: 'hidden',
-                boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                position: 'relative',
-              }}>
-                {/* Map header */}
-                <div style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, zIndex: 500,
-                  background: 'linear-gradient(180deg, rgba(15,23,42,0.85) 0%, transparent 100%)',
-                  padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8,
-                }}>
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ADE80', animation: 'pulse-dot 1.5s infinite' }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>Live Coverage Map — Bengaluru</span>
-                </div>
-                <ZoneMap zones={zones} height={320} />
-              </div>
-
-              {/* Quick stats below map */}
-              <div style={{
-                display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10,
-              }}>
-                {[
-                  { label: 'Zones Covered', val: zones.length || '9', icon: MapPin },
-                  { label: 'Weekly Premium', val: 'From ₹149', icon: Shield },
-                  { label: 'Auto Payout', val: 'DI > 75', icon: Zap },
-                ].map(s => (
-                  <div key={s.label} style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 10, padding: '12px 14px', textAlign: 'center',
-                  }}>
-                    <s.icon size={14} color="#818CF8" style={{ margin: '0 auto 6px' }} />
-                    <div style={{ fontSize: 14, fontWeight: 800, color: 'white' }}>{s.val}</div>
-                    <div style={{ fontSize: 10, color: '#64748B', marginTop: 2 }}>{s.label}</div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>
@@ -767,7 +747,7 @@ export default function Landing() {
                 { icon: Clock, label: 'Founded', value: '2026' },
                 { icon: Users, label: 'Target', value: '7M riders' },
                 { icon: MapPin, label: 'City', value: 'Bengaluru' },
-                { icon: AlertCircle, label: 'DI Trigger', value: 'Score > 75' },
+                { icon: Zap, label: 'Payouts', value: 'Instant' },
               ].map(item => (
                 <div key={item.label} style={{ padding: '22px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10 }}>
                   <item.icon size={16} color="#6366F1" />
@@ -800,6 +780,11 @@ export default function Landing() {
       </FadeIn>
 
       {/* ══ FOOTER ═══════════════════════════════════════════════ */}
+      <div style={{ background: '#F8FAFC', lineHeight: 0, marginTop: '-1px' }}>
+        <svg viewBox="0 0 1440 90" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: '80px' }}>
+          <path fill="#0F172A" d="M0,0 C400,140 1000,-40 1440,70 L1440,100 L0,100 Z"></path>
+        </svg>
+      </div>
       <footer style={{ background: '#0F172A', color: '#94A3B8' }}>
         <div className="lnd-footer-grid" style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 32px 48px', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48 }}>
           <div className="lnd-footer-col">
