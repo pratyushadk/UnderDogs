@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { adminZones } from '../../services/api.js';
+import { adminZones, fetchZones } from '../../services/api.js';
 import { Loader, MapPin, TrendingUp, Users, BarChart2, X, AlertTriangle } from 'lucide-react';
 import ZoneMap from '../../components/ZoneMap.jsx';
 
@@ -96,8 +96,17 @@ export default function AdminZones() {
   const [panelZone, setPanelZone] = useState(null);         // full zone object
 
   useEffect(() => {
-    adminZones()
-      .then(r => setZones(r.data.zones || []))
+    Promise.all([adminZones(), fetchZones()])
+      .then(([adminRes, zonesRes]) => {
+        const statsMap = {};
+        (adminRes.data.zones || []).forEach(z => { statsMap[z.zone_id] = z; });
+        // Merge geometry from public zones API into admin stats
+        const merged = (adminRes.data.zones || []).map(z => ({
+          ...z,
+          geom: (zonesRes.data.zones || zonesRes.data || []).find(g => g.zone_id === z.zone_id)?.geom || null,
+        }));
+        setZones(merged);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
