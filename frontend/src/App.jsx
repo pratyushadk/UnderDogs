@@ -190,7 +190,7 @@ function Sidebar() {
             <User className="w-4 h-4" />
           </div>
           <div className="sidebar-user-info">
-            <div className="sidebar-user-name">{user?.full_name || 'Rider'}</div>
+            <div className="sidebar-user-name">{user?.name || 'Rider'}</div>
             <div className="sidebar-user-role">Gig Worker</div>
           </div>
           <NotifBell />

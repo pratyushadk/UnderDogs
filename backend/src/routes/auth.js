@@ -73,7 +73,7 @@ router.post('/signup', async (req, res) => {
 
     // Issue JWT
     const token = jwt.sign(
-      { user_id: user.user_id, role: user.role },
+      { user_id: user.user_id, role: user.role, name: user.name },
       process.env.JWT_SECRET,
       { expiresIn: JWT_EXPIRY }
     );
@@ -141,7 +141,7 @@ router.post('/login', async (req, res) => {
 
     // Issue JWT
     const token = jwt.sign(
-      { user_id: user.user_id, role: user.role },
+      { user_id: user.user_id, role: user.role, name: user.name },
       process.env.JWT_SECRET,
       { expiresIn: JWT_EXPIRY }
     );
