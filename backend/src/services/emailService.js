@@ -24,7 +24,7 @@ function getTransporter() {
 }
 
 const FROM = `"${process.env.EMAIL_FROM_NAME || 'WorkSafe'}" <${process.env.EMAIL_USER}>`;
-const BASE = process.env.APP_BASE_URL || 'http://localhost:3000';
+const BASE = process.env.APP_BASE_URL || 'https://worksafe-seven.vercel.app';
 
 // ── Templates ────────────────────────────────────────────────
 
