@@ -16,8 +16,8 @@
       "headers": { "Access-Control-Allow-Origin": "*" }
     },
     {
-      "src": "/admin/(.*)",
-      "dest": "https://worksafe-backend1.onrender.com/admin/$1",
+      "src": "/api/admin/(.*)",
+      "dest": "https://worksafe-backend1.onrender.com/api/admin/$1",
       "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       "headers": { "Access-Control-Allow-Origin": "*" }
     },

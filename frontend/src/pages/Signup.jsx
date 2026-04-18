@@ -43,7 +43,7 @@ export default function Signup() {
   const [emailSent, setEmailSent] = useState(false);  // show check-email screen
   const [signedUpEmail, setSignedUpEmail] = useState('');
 
-  if (!authLoading && user) {
+  if (!authLoading && user && !emailSent) {
     return <Navigate to={user.role === 'ADMIN' ? '/admin' : '/app/dashboard'} replace />;
   }
 
@@ -66,13 +66,14 @@ export default function Signup() {
       };
       const res = await signupApi(payload);
       const { token, user, verificationEmailSent } = res.data;
-      login(token, user);
 
       // If email was provided, show verify screen; otherwise go straight to onboard
       if (verificationEmailSent && isEmail) {
         setSignedUpEmail(form.identifier.trim());
         setEmailSent(true);
       } else {
+        // Only log in and navigate if no email verification is needed (e.g. phone signup)
+        login(token, user);
         navigate('/app/onboard');
       }
     } catch (err) {

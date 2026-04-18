@@ -76,7 +76,7 @@ async function bootstrap() {
   app.use('/auth',                  authRouter);
   app.use('/api/payments',          paymentsRouter);
   app.use('/api/notifications',     notificationsRouter);
-  app.use('/admin',                 adminRouter);
+  app.use('/api/admin',             adminRouter);
 
   // 6. 404 handler
   app.use((_req, res) => {

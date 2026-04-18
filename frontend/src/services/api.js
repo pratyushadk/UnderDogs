@@ -7,7 +7,7 @@ import axios from 'axios';
 const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || '';
 const BASE_URL    = `${BACKEND_URL}/api`;
 const AUTH_URL    = `${BACKEND_URL}/auth`;
-const ADMIN_URL   = `${BACKEND_URL}/admin`;
+const ADMIN_URL   = `${BACKEND_URL}/api/admin`;
 
 const api = axios.create({ baseURL: BASE_URL, timeout: 15000 });
 const authApi  = axios.create({ baseURL: AUTH_URL,  timeout: 15000 });

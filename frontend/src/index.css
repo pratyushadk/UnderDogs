@@ -208,16 +208,20 @@ body {
 
 /* Notification panel — Contextually positioned */
 .notif-panel {
-  position: absolute;
-  bottom: calc(100% + 12px);
-  left: 0;
-  width: 300px; background: white;
-  border-radius: var(--r-lg); box-shadow: var(--sh-lg);
+  position: fixed;
+  bottom: 80px;
+  left: 16px;
+  width: 300px;
+  background: white;
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-lg);
   border: 1px solid var(--ws-border);
-  z-index: 9999; overflow: hidden;
+  z-index: 9999;
+  overflow: hidden;
   animation: slide-up 0.2s ease-out;
 }
 .mobile-topbar .notif-panel {
+  position: absolute;
   bottom: auto;
   top: calc(100% + 12px);
   right: -8px;
