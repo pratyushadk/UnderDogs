@@ -10,6 +10,7 @@
 const express = require('express');
 const router  = express.Router();
 const { authenticate } = require('../middleware/auth');
+const { authenticateUser, authorizeAdmin } = require('../middleware/authUser');
 const { query } = require('../config/db');
 
 // ─────────────────────────────────────────────────────────────
@@ -48,7 +49,8 @@ router.get('/mine', authenticate, async (req, res) => {
 // GET /api/claims/event/:eventId
 // Returns event detail with all associated claims
 // ─────────────────────────────────────────────────────────────
-router.get('/event/:eventId', authenticate, async (req, res) => {
+// Only admins should be able to view full event breakdowns.
+router.get('/event/:eventId', authenticateUser, authorizeAdmin, async (req, res) => {
   const { eventId } = req.params;
   try {
     const eventRes = await query(
@@ -80,7 +82,9 @@ router.get('/event/:eventId', authenticate, async (req, res) => {
 // Underwriter analytics (PRD Section 4.6 — SRS FR-4.6)
 // Returns: zone heatmap data, float exposure, C_factor distribution
 // ─────────────────────────────────────────────────────────────
-router.get('/dashboard', async (req, res) => {
+// Underwriter analytics (PRD Section 4.6 — SRS FR-4.6)
+// Restricted to Admins only.
+router.get('/dashboard', authenticateUser, authorizeAdmin, async (req, res) => {
   try {
     // Zone-level DI summary (last 24h)
     const diSummary = await query(`
