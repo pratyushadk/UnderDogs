@@ -2,10 +2,10 @@
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
   "rewrites": [
-    { "source": "/auth/:path*",  "destination": "https://worksafe-backend1.onrender.com/auth/:path*" },
-    { "source": "/api/:path*",   "destination": "https://worksafe-backend1.onrender.com/api/:path*" },
-    { "source": "/admin/:path*", "destination": "https://worksafe-backend1.onrender.com/admin/:path*" },
-    { "source": "/health",       "destination": "https://worksafe-backend1.onrender.com/health" },
+    { "source": "/auth/:path*",  "destination": "https://worksafe-backend.onrender.com/auth/:path*" },
+    { "source": "/api/:path*",   "destination": "https://worksafe-backend.onrender.com/api/:path*" },
+    { "source": "/admin/:path*", "destination": "https://worksafe-backend.onrender.com/admin/:path*" },
+    { "source": "/health",       "destination": "https://worksafe-backend.onrender.com/health" },
     { "source": "/(.*)",         "destination": "/index.html" }
   ]
 }

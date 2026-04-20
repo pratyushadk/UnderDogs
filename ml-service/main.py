@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../.env'))
+load_dotenv()  # reads from env vars on Render, or local .env during dev
 
 from routes.validate_img import router as validate_img_router
 from utils.clip_classifier import load_clip_model
@@ -41,9 +41,18 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Pull allowed origins from env so production URLs don't need code changes
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+_extra = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+ALLOWED_ORIGINS = [
+    "http://localhost:4000",
+    "http://localhost:3000",
+    *_extra,
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4000", "http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["POST", "GET"],
     allow_headers=["*"],
 )

@@ -1,0 +1,101 @@
+## WorkSafe — Render Blueprint
+## This file auto-configures all 3 backend services on render.com
+## Docs: https://render.com/docs/blueprint-spec
+
+services:
+
+  # ── 1. Main Backend API (Node/Express) ─────────────────────────────
+  - type: web
+    name: worksafe-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        sync: false          # Set manually on Render dashboard
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 5432
+      - key: DB_NAME
+        value: postgres
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: EMAIL_USER
+        value: contactwithtabrej@gmail.com
+      - key: EMAIL_APP_PASSWORD
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: WorkSafe
+      - key: APP_BASE_URL
+        value: https://worksafe-seven.vercel.app
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: OPENWEATHERMAP_API_KEY
+        sync: false
+      - key: TOMORROW_IO_API_KEY
+        sync: false
+      - key: TOMTOM_API_KEY
+        sync: false
+      - key: PREDICTHQ_ACCESS_TOKEN
+        sync: false
+      - key: NEWSAPI_KEY
+        sync: false
+      - key: NASA_EONET_BASE_URL
+        value: https://eonet.gsfc.nasa.gov/api/v3/events
+      - key: USGS_BASE_URL
+        value: https://earthquake.usgs.gov/fdsnws/event/1/query
+      - key: MOCK_PARTNER_API_SECRET
+        value: worksafe_internal_2026
+      - key: MOCK_PARTNER_API_URL
+        sync: false          # Set AFTER mock-api is deployed
+      - key: ML_SERVICE_URL
+        sync: false          # Set AFTER ml-service is deployed
+      - key: C_RATIO
+        value: "0.85"
+      - key: DI_THRESHOLD
+        value: "75"
+      - key: VELOCITY_LIMIT_KMPH
+        value: "80"
+      - key: CRON_PREMIUM_SCHEDULE
+        value: "0 23 * * 6"
+      - key: CRON_POLLING_SCHEDULE
+        value: "*/15 * * * *"
+
+  # ── 2. ML Microservice (Python/FastAPI) ────────────────────────────
+  - type: web
+    name: worksafe-ml
+    runtime: python
+    rootDir: ml-service
+    pythonVersion: "3.11.9"
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: HUGGINGFACE_API_TOKEN
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false          # e.g. https://worksafe-backend.onrender.com,https://worksafe-seven.vercel.app
+
+  # ── 3. Mock Partner API (Node/Express) ─────────────────────────────
+  - type: web
+    name: worksafe-mock-api
+    runtime: node
+    rootDir: mock-partner-api
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: MOCK_PARTNER_API_SECRET
+        value: worksafe_internal_2026

@@ -5,13 +5,13 @@
  * All 10 riders registered for full demo
  */
 
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config();
 const express = require('express');
 const app = express();
 app.use(express.json());
 
 const SECRET = (process.env.MOCK_PARTNER_API_SECRET || 'worksafe_internal_2026').trim();
-const PORT   = 4001;
+const PORT   = process.env.PORT || 4001;
 
 // ── Auth middleware ───────────────────────────────────────────
 app.use((req, res, next) => {
