@@ -35,14 +35,12 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const [pol, dash, cl, z] = await Promise.allSettled([
+        const [pol, cl, z] = await Promise.allSettled([
           fetchPolicyStatus(),
-          fetchDashboard(),
           fetchClaims(),
           fetchZones(),
         ]);
         if (pol.status  === 'fulfilled')  setPolicy(pol.value.data);
-        if (dash.status === 'fulfilled')  setStats(dash.value.data);
         if (cl.status   === 'fulfilled') {
           const raw = cl.value.data;
           setClaims(Array.isArray(raw) ? raw : (raw?.claims ?? []));
