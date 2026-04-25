@@ -56,10 +56,12 @@ venv.bak/
 logs/
 *.log
 
+
+
 # Database
 *.sqlite3
 pg_data/
 
-#Documents
-PRD.md 
+# Documents
+PRD.md
 SRS.md
