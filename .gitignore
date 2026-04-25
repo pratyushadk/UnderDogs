@@ -59,3 +59,7 @@ logs/
 # Database
 *.sqlite3
 pg_data/
+
+#Documents
+PRD.md 
+SRS.md

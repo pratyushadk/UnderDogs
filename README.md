@@ -5,9 +5,9 @@
 > | Document | Description |
 > |----------|-------------|
 > | **[Try It Out](Tryitout.md)** | **Start here** — Step-by-step guide to explore the live prototype, test demo riders, and understand every feature with code references |
-> | **[Product Requirements (PRD)](PRD.md)** | Business logic, user journeys, mathematical models, and product vision |
+<!-- > | **[Product Requirements (PRD)](PRD.md)** | Business logic, user journeys, mathematical models, and product vision |
 > | **[Software Requirements (SRS)](SRS.md)** | Full technical specification with requirement traceability, API contracts, and architecture details |
-> | **[Pitch Deck](https://drive.google.com/file/d/1xq5dvMCZB5HHtMdGJ_NM7IU67-PEamQZ/view?usp=sharing)** | Investor pitch deck — product vision, market opportunity, USPs, and business model |
+> | **[Pitch Deck](https://drive.google.com/file/d/1xq5dvMCZB5HHtMdGJ_NM7IU67-PEamQZ/view?usp=sharing)** | Investor pitch deck — product vision, market opportunity, USPs, and business model | -->
 
 ---
 
